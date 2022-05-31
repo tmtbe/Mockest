@@ -1,6 +1,6 @@
 .PHONY: build.filter
 build.filter:
-	cd filter && nerdctl run -v "${PWD}":/home -w /home tinygo/tinygo:0.23.0 sh build.sh
+	cd filter && cargo build --target wasm32-unknown-unknown --release
 
 .PHONY: build.sidecar
 build.sidecar: build.filter

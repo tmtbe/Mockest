@@ -1,1 +1,0 @@
-tinygo build -o ./dist/filter.wasm -scheduler=none -target=wasi ./main.go
