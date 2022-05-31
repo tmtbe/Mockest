@@ -22,9 +22,7 @@ RUN apt-get update && \
   && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 RUN useradd -m --uid 1987 sidecar && \
    echo "sidecar ALL=NOPASSWD: ALL" >> /etc/sudoers
-COPY ./envoy /home/sidecar
-COPY ./run.sh /home/sidecar
-COPY ./envoy.yaml /home/sidecar
+COPY data /home/sidecar
 USER sidecar
 WORKDIR /home/sidecar
 CMD sh ./run.sh
