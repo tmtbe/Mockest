@@ -1,19 +1,7 @@
-// Copyright 2020 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+use proxy_wasm::hostcalls::log;
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
+use serde::{Serialize, Deserialize};
 
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Trace);
@@ -25,45 +13,57 @@ struct HttpBodyRoot;
 impl Context for HttpBodyRoot {}
 
 impl RootContext for HttpBodyRoot {
+    fn create_http_context(&self, _: u32) -> Option<Box<dyn HttpContext>> {
+        Some(Box::new(HttpBody { record: Record {
+            request_headers: vec![],
+            request_body: "".to_string(),
+            response_headers: vec![],
+            response_body: "".to_string()
+        } }))
+    }
+
     fn get_type(&self) -> Option<ContextType> {
         Some(ContextType::HttpContext)
     }
-
-    fn create_http_context(&self, _: u32) -> Option<Box<dyn HttpContext>> {
-        Some(Box::new(HttpBody))
-    }
 }
-
-struct HttpBody;
+#[derive(Serialize, Deserialize)]
+struct Record{
+    request_headers:Vec<(String,String)>,
+    request_body: String,
+    response_headers:Vec<(String,String)>,
+    response_body: String,
+}
+struct HttpBody{
+    record: Record
+}
 
 impl Context for HttpBody {}
 
 impl HttpContext for HttpBody {
-    fn on_http_response_headers(&mut self, _: usize, _: bool) -> Action {
-        // If there is a Content-Length header and we change the length of
-        // the body later, then clients will break. So remove it.
-        // We must do this here, because once we exit this function we
-        // can no longer modify the response headers.
-        self.set_http_response_header("content-length", None);
-        Action::Continue
-    }
-
-    fn on_http_response_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
+    fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
         if !end_of_stream {
-            // Wait -- we'll be called again when the complete body is buffered
-            // at the host side.
             return Action::Pause;
         }
-
-        // Replace the message body if it contains the text "secret".
-        // Since we returned "Pause" previuously, this will return the whole body.
-        if let Some(body_bytes) = self.get_http_response_body(0, body_size) {
+        if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
             let body_str = String::from_utf8(body_bytes).unwrap();
-            if body_str.contains("secret") {
-                let new_body = format!("Original message body ({} bytes) redacted.", body_size);
-                self.set_http_response_body(0, body_size, &new_body.into_bytes());
-            }
+            self.record.request_body=body_str
         }
         Action::Continue
+    }
+    fn on_http_response_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
+        if !end_of_stream {
+            return Action::Pause;
+        }
+        if let Some(body_bytes) = self.get_http_response_body(0, body_size) {
+            let body_str = String::from_utf8(body_bytes).unwrap();
+            self.record.response_body=body_str
+        }
+        Action::Continue
+    }
+    fn on_log(&mut self) {
+        self.record.request_headers = self.get_http_request_headers();
+        self.record.response_headers = self.get_http_response_headers();
+        let msg = serde_json::to_string(&self.record).expect("");
+        log(LogLevel::Info, &*&msg).expect("");
     }
 }
