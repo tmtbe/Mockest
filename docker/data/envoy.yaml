@@ -12,7 +12,7 @@ bootstrap_extensions:
     config:
       configuration:
         "@type": type.googleapis.com/google.protobuf.StringValue
-        value: '{"plugin_type": "bootstrap","host":"httpbin.org"}'
+        value: '{"plugin_type": "bootstrap","host":"sidecar"}'
       vm_config:
         vm_id: "record"
         runtime: "envoy.wasm.runtime.v8"
@@ -116,11 +116,11 @@ static_resources:
     dns_lookup_family: V4_ONLY
     lb_policy: ROUND_ROBIN
     load_assignment:
-      cluster_name: httpbin
+      cluster_name: sidecar
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: httpbin.org
+                address: sidecar
                 port_value: 80

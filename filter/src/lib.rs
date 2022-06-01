@@ -5,10 +5,10 @@ use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
 use serde::{Deserialize, Serialize};
 use sony_flake::SonyFlakeEntity;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 proxy_wasm::main! {{
-    proxy_wasm::set_log_level(LogLevel::Trace);
+    proxy_wasm::set_log_level(LogLevel::Info);
     proxy_wasm::set_root_context(|_| -> Box<dyn RootContext> {
         Box::new(PluginContext {
             config: PluginConfig{
@@ -32,7 +32,21 @@ struct PluginContext {
     queue_id: u32,
 }
 
-impl Context for PluginContext {}
+impl Context for PluginContext {
+    fn on_http_call_response(
+        &mut self,
+        _token_id: u32,
+        _num_headers: usize,
+        _body_size: usize,
+        _num_trailers: usize,
+    ) {
+        info!(
+            "[{}] http call response status:{}",
+            self.config.plugin_type,
+            self.get_http_call_response_header(":status").unwrap()
+        )
+    }
+}
 
 impl RootContext for PluginContext {
     fn on_configure(&mut self, _plugin_configuration_size: usize) -> bool {
