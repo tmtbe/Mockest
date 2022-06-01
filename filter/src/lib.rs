@@ -14,6 +14,7 @@ proxy_wasm::main! {{
             config: PluginConfig{
                 plugin_type:"none".to_string()  ,
                 host:None,
+                post_path:None,
             },
             sfe: SonyFlakeEntity::new_default(),
             queue_id: 0,
@@ -25,6 +26,7 @@ proxy_wasm::main! {{
 struct PluginConfig {
     plugin_type: String,
     host: Option<String>,
+    post_path: Option<String>,
 }
 struct PluginContext {
     config: PluginConfig,
@@ -77,11 +79,12 @@ impl RootContext for PluginContext {
             let record = String::from_utf8(bytes).unwrap();
             info!("[{}] record {}", self.config.plugin_type, record);
             let host = self.config.host.as_ref().unwrap();
+            let post_path = self.config.post_path.as_ref().unwrap();
             self.dispatch_http_call(
                 "record-service",
                 vec![
                     (":method", "POST"),
-                    (":path", "/post"),
+                    (":path", post_path.as_str()),
                     (":authority", host.as_str()),
                 ],
                 Option::Some(record.as_ref()),
@@ -119,6 +122,7 @@ impl RootContext for PluginContext {
             config: PluginConfig {
                 plugin_type: (&*self.config.plugin_type).to_string(),
                 host: None,
+                post_path: None,
             },
             record: Record {
                 plugin_type: "".to_string(),
