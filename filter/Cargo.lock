@@ -20,6 +20,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "filter"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "proxy-wasm",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -37,15 +47,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db0d4cf898abf0081f964436dc980e96670a0f36863e4b83aaacdb65c9d7ccc3"
 dependencies = [
  "ahash",
-]
-
-[[package]]
-name = "inbound-filter"
-version = "0.1.0"
-dependencies = [
- "proxy-wasm",
- "serde",
- "serde_json",
 ]
 
 [[package]]

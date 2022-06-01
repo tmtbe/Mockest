@@ -4,6 +4,21 @@ admin:
       protocol: TCP
       address: 0.0.0.0
       port_value: 9901
+bootstrap_extensions:
+- name: envoy.bootstrap.wasm
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.wasm.v3.WasmService
+    singleton: true
+    config:
+      configuration:
+        "@type": type.googleapis.com/google.protobuf.StringValue
+        value: '{"plugin_type": "bootstrap"}'
+      vm_config:
+        vm_id: "record"
+        runtime: "envoy.wasm.runtime.v8"
+        code:
+          local:
+            filename: "/home/sidecar/filter.wasm"
 static_resources:
   listeners:
   - name: listener_inbound
@@ -21,11 +36,6 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           stat_prefix: ingress_http
-          access_log:
-            - name: mylog
-              typed_config:
-                "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                path: /home/sidecar/envoy_access_inbound.log
           route_config:
             name: myroute
             virtual_hosts:
@@ -43,11 +53,15 @@ static_resources:
                 type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
                 value:
                   config:
+                    configuration:
+                      "@type": type.googleapis.com/google.protobuf.StringValue
+                      value: '{"plugin_type": "inbound"}'
                     vm_config:
+                      vm_id: "record"
                       runtime: "envoy.wasm.runtime.v8"
                       code:
                         local:
-                          filename: "/home/sidecar/inbound_filter.wasm"
+                          filename: "/home/sidecar/filter.wasm"
             - name: envoy.filters.http.router
   - name: listener_outbound
     address:
@@ -64,11 +78,6 @@ static_resources:
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
               stat_prefix: ingress_http
-              access_log:
-                - name: mylog
-                  typed_config:
-                    "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                    path: /home/sidecar/envoy_access_outbound.log
               route_config:
                 name: myroute
                 virtual_hosts:
@@ -86,11 +95,15 @@ static_resources:
                     type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
                     value:
                       config:
+                        configuration:
+                          "@type": type.googleapis.com/google.protobuf.StringValue
+                          value: '{"plugin_type": "outbound"}'
                         vm_config:
+                          vm_id: "record"
                           runtime: "envoy.wasm.runtime.v8"
                           code:
                             local:
-                              filename: "/home/sidecar/outbound_filter.wasm"
+                              filename: "/home/sidecar/filter.wasm"
                 - name: envoy.filters.http.router
   clusters:
   - name: cluster-default
