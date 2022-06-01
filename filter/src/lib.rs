@@ -5,7 +5,7 @@ use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
 use serde::{Deserialize, Serialize};
 use sony_flake::SonyFlakeEntity;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Info);
