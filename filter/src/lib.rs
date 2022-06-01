@@ -1,4 +1,3 @@
-mod record;
 mod sony_flake;
 
 use log::info;
@@ -6,13 +5,15 @@ use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
 use serde::{Deserialize, Serialize};
 use sony_flake::SonyFlakeEntity;
+use std::time::Duration;
 
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Trace);
     proxy_wasm::set_root_context(|_| -> Box<dyn RootContext> {
         Box::new(PluginContext {
             config: PluginConfig{
-                plugin_type:"none".to_string()
+                plugin_type:"none".to_string()  ,
+                host:None,
             },
             sfe: SonyFlakeEntity::new_default(),
             queue_id: 0,
@@ -23,6 +24,7 @@ proxy_wasm::main! {{
 #[derive(Serialize, Deserialize)]
 struct PluginConfig {
     plugin_type: String,
+    host: Option<String>,
 }
 struct PluginContext {
     config: PluginConfig,
@@ -59,7 +61,20 @@ impl RootContext for PluginContext {
     fn on_queue_ready(&mut self, queue_id: u32) {
         if let Some(bytes) = self.dequeue_shared_queue(queue_id).expect("wrong queue") {
             let record = String::from_utf8(bytes).unwrap();
-            info!("[{}] record {}", self.config.plugin_type, record)
+            info!("[{}] record {}", self.config.plugin_type, record);
+            let host = self.config.host.as_ref().unwrap();
+            self.dispatch_http_call(
+                "record-service",
+                vec![
+                    (":method", "POST"),
+                    (":path", "/post"),
+                    (":authority", host.as_str()),
+                ],
+                Option::Some(record.as_ref()),
+                vec![],
+                Duration::from_secs(2),
+            )
+            .expect("dispatch http call error");
         }
     }
     fn create_http_context(&self, context_id: u32) -> Option<Box<dyn HttpContext>> {
@@ -89,6 +104,7 @@ impl RootContext for PluginContext {
             queue_id: self.queue_id,
             config: PluginConfig {
                 plugin_type: (&*self.config.plugin_type).to_string(),
+                host: None,
             },
             record: Record {
                 plugin_type: "".to_string(),
