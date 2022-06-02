@@ -2,8 +2,9 @@
 项目开展中。。
 * 通过intercept拦截容器中的流量 【已实现】
 * 通过collector收集拦截的流量日志 【已实现】
-* 提供cli工具快速上手
+* 通过intercept强行进行串行请求，绑定inbound和outbound
 * collector系列功能实现，UI
+* 提供cli工具快速上手
 * 通过replay实现重放
 
 
