@@ -40,6 +40,7 @@ inbound intercept 将强行将请求串行化，这样才能识别inbound和outb
 由于全局tcp拦截的存在，我们可以实现很多动态mock的功能，不必修改代码中的host，不必分host:port提供mock server。
 
 ## 加入该项目你可能需要了解的知识
+* 测试理论
 * 语言rust go，其中rust用作envoy扩展的编写
 * 了解iptables的配置规则
 * 学习envoyproxy以及扩展的编写
