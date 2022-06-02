@@ -18,7 +18,7 @@ bootstrap_extensions:
         runtime: "envoy.wasm.runtime.v8"
         code:
           local:
-            filename: "/home/sidecar/filter.wasm"
+            filename: "/home/sidecar/intercept.wasm"
 static_resources:
   listeners:
   - name: listener_inbound
@@ -61,7 +61,7 @@ static_resources:
                       runtime: "envoy.wasm.runtime.v8"
                       code:
                         local:
-                          filename: "/home/sidecar/filter.wasm"
+                          filename: "/home/sidecar/intercept.wasm"
             - name: envoy.filters.http.router
   - name: listener_outbound
     address:
@@ -103,7 +103,7 @@ static_resources:
                           runtime: "envoy.wasm.runtime.v8"
                           code:
                             local:
-                              filename: "/home/sidecar/filter.wasm"
+                              filename: "/home/sidecar/intercept.wasm"
                 - name: envoy.filters.http.router
   clusters:
   - name: cluster-default
