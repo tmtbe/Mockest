@@ -197,7 +197,7 @@ impl HttpContext for HttpFilterContext {
         self.record.response_headers = self.get_http_response_headers();
         self.record.trace_id = (&*self.trace_id).to_string();
         self.record.plugin_type = (&*self.config.plugin_type).to_string();
-        let record_json = serde_json::to_string(&self.record).expect("");
+        let record_json = serde_json::to_string(&self.record).expect("json error");
         self.enqueue_shared_queue(self.queue_id, Some(record_json.as_bytes()))
             .expect("wrong enqueue shared queue");
     }

@@ -4,28 +4,19 @@ use log::info;
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
 use serde::{Deserialize, Serialize};
-use sony_flake::SonyFlakeEntity;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 const COLLECTOR_SERVICE_UPSTREAM: &str = "collector-service";
-const OUTBOUND: &str = "outbound";
-const INBOUND: &str = "inbound";
-const BOOTSTRAP: &str = "bootstrap";
-const SHARED_QUEUE_NAME: &str = "record_json";
-const VM_ID: &str = "intercept";
-const SHARED_DATA_NAME: &str = "trace_id";
 
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Info);
     proxy_wasm::set_root_context(|_| -> Box<dyn RootContext> {
         Box::new(PluginContext {
             config: PluginConfig{
-                plugin_type:"none".to_string()  ,
+                plugin_type:"none".to_string(),
                 host:None,
                 post_path:None,
-            },
-            sfe: SonyFlakeEntity::new_default(),
-            queue_id: 0,
+            }
         })
     });
 }}
@@ -38,25 +29,9 @@ struct PluginConfig {
 }
 struct PluginContext {
     config: PluginConfig,
-    sfe: SonyFlakeEntity,
-    queue_id: u32,
 }
 
-impl Context for PluginContext {
-    fn on_http_call_response(
-        &mut self,
-        _token_id: u32,
-        _num_headers: usize,
-        _body_size: usize,
-        _num_trailers: usize,
-    ) {
-        info!(
-            "[{}] http call response status:{}",
-            self.config.plugin_type,
-            self.get_http_call_response_header(":status").unwrap()
-        )
-    }
-}
+impl Context for PluginContext {}
 
 impl RootContext for PluginContext {
     fn on_configure(&mut self, _plugin_configuration_size: usize) -> bool {
@@ -65,84 +40,24 @@ impl RootContext for PluginContext {
             self.config = serde_json::from_str(&*plugin_config).unwrap();
             info!("[{}] plugin started", self.config.plugin_type)
         }
-        if self.config.plugin_type == BOOTSTRAP {
-            let queue_id = self.register_shared_queue(SHARED_QUEUE_NAME);
-            info!(
-                "[{}] register shared queue:{}",
-                self.config.plugin_type, queue_id
-            )
-        } else {
-            if let Some(queue_id) = self.resolve_shared_queue(VM_ID, SHARED_QUEUE_NAME) {
-                self.queue_id = queue_id
-            }
-            info!(
-                "[{}] register shared queue:{}",
-                self.config.plugin_type, self.queue_id
-            )
-        }
         true
-    }
-    fn on_queue_ready(&mut self, queue_id: u32) {
-        if let Some(bytes) = self.dequeue_shared_queue(queue_id).expect("wrong queue") {
-            let record = String::from_utf8(bytes).unwrap();
-            info!("[{}] record {}", self.config.plugin_type, record);
-            let host = self.config.host.as_ref().unwrap();
-            let post_path = self.config.post_path.as_ref().unwrap();
-            self.dispatch_http_call(
-                COLLECTOR_SERVICE_UPSTREAM,
-                vec![
-                    (":method", "POST"),
-                    (":path", post_path.as_str()),
-                    (":authority", host.as_str()),
-                ],
-                Option::Some(record.as_ref()),
-                vec![],
-                Duration::from_secs(2),
-            )
-            .expect("dispatch http call error");
-        }
     }
     fn create_http_context(&self, context_id: u32) -> Option<Box<dyn HttpContext>> {
         info!(
             "[{}] http context started, context_id:{}",
             self.config.plugin_type, context_id
         );
-        let mut trace_id: String = self.sfe.get_id(self.get_current_time()).to_string();
-        if self.config.plugin_type == OUTBOUND {
-            if let (Some(bytes), _cas) = self.get_shared_data(SHARED_DATA_NAME) {
-                trace_id = String::from_utf8(bytes).unwrap();
-            }
-        } else if self.config.plugin_type == INBOUND {
-            match self.set_shared_data(
-                SHARED_DATA_NAME,
-                Some(trace_id.to_string().as_bytes()),
-                None,
-            ) {
-                Ok(_) => {
-                    info!(
-                        "[{}] shared context id:{}",
-                        self.config.plugin_type, trace_id
-                    );
-                }
-                Err(cause) => panic!("unexpected status: {:?}", cause),
-            }
-        }
-
+        let host = self.config.host.as_ref().unwrap();
+        let post_path = self.config.post_path.as_ref().unwrap();
         Some(Box::new(HttpFilterContext {
-            trace_id,
-            queue_id: self.queue_id,
             config: PluginConfig {
                 plugin_type: (&*self.config.plugin_type).to_string(),
-                host: None,
-                post_path: None,
+                host: Some(host.to_string()),
+                post_path: Some(post_path.to_string()),
             },
-            record: Record {
-                plugin_type: "".to_string(),
-                trace_id: "".to_string(),
+            request: Request {
                 request_headers: vec![],
                 request_body: "".to_string(),
-                response_headers: vec![],
-                response_body: "".to_string(),
             },
         }))
     }
@@ -151,54 +66,100 @@ impl RootContext for PluginContext {
         Some(ContextType::HttpContext)
     }
 }
-
-struct HttpFilterContext {
-    trace_id: String,
-    config: PluginConfig,
-    queue_id: u32,
-    record: Record,
-}
-
 #[derive(Serialize, Deserialize)]
-struct Record {
-    plugin_type: String,
-    trace_id: String,
+struct Request {
     request_headers: Vec<(String, String)>,
     request_body: String,
+}
+#[derive(Serialize, Deserialize)]
+struct Response {
     response_headers: Vec<(String, String)>,
     response_body: String,
 }
 
-impl Context for HttpFilterContext {}
+struct HttpFilterContext {
+    config: PluginConfig,
+    request: Request,
+}
+
+impl Context for HttpFilterContext {
+    fn on_http_call_response(
+        &mut self,
+        _token_id: u32,
+        _num_headers: usize,
+        body_size: usize,
+        _num_trailers: usize,
+    ) {
+        let response: Response;
+        if let Some(body_bytes) = self.get_http_call_response_body(0, body_size) {
+            let body_str = String::from_utf8(body_bytes).unwrap();
+            response = serde_json::from_str(&*body_str).expect("json error");
+            let headers: Vec<(&str, &str)> = response
+                .response_headers
+                .iter()
+                .map(|(k, v)| (k.as_ref(), v.as_ref()))
+                .collect();
+            let status_code = &response
+                .response_headers
+                .iter()
+                .find(|(k, _v)| k == ":status")
+                .unwrap()
+                .1
+                .parse::<u32>()
+                .unwrap();
+            let mut body: Option<&[u8]> = None;
+            if !response.response_body.is_empty() {
+                body = Some(response.response_body.as_bytes());
+            }
+            self.send_http_response(*status_code, headers, body);
+        } else {
+            self.send_http_response(
+                403,
+                vec![("Powered-By", "proxy-wasm")],
+                Some(b"Access forbidden.\n"),
+            );
+        }
+    }
+}
 
 impl HttpContext for HttpFilterContext {
+    fn on_http_request_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
+        self.request.request_headers = self.get_http_request_headers();
+        if end_of_stream {
+            self.call_collector();
+            Action::Pause
+        } else {
+            Action::Continue
+        }
+    }
     fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
-        if !end_of_stream {
-            return Action::Pause;
+        if end_of_stream {
+            if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
+                let body_str = String::from_utf8(body_bytes).unwrap();
+                self.request.request_body = body_str
+            }
+            self.call_collector();
         }
-        if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
-            let body_str = String::from_utf8(body_bytes).unwrap();
-            self.record.request_body = body_str
-        }
-        Action::Continue
+        Action::Pause
     }
-    fn on_http_response_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
-        if !end_of_stream {
-            return Action::Pause;
-        }
-        if let Some(body_bytes) = self.get_http_response_body(0, body_size) {
-            let body_str = String::from_utf8(body_bytes).unwrap();
-            self.record.response_body = body_str
-        }
-        Action::Continue
-    }
-    fn on_log(&mut self) {
-        self.record.request_headers = self.get_http_request_headers();
-        self.record.response_headers = self.get_http_response_headers();
-        self.record.trace_id = (&*self.trace_id).to_string();
-        self.record.plugin_type = (&*self.config.plugin_type).to_string();
-        let record_json = serde_json::to_string(&self.record).expect("");
-        self.enqueue_shared_queue(self.queue_id, Some(record_json.as_bytes()))
-            .expect("wrong enqueue shared queue");
+}
+impl HttpFilterContext {
+    fn call_collector(&mut self) {
+        let post_path = self.config.post_path.as_ref().unwrap();
+        let host = self.config.host.as_ref().unwrap();
+        let record_json = serde_json::to_string(&self.request).expect("json error");
+        info!("{}", record_json);
+        self.dispatch_http_call(
+            COLLECTOR_SERVICE_UPSTREAM,
+            vec![
+                (":method", "POST"),
+                (":path", post_path.as_str()),
+                (":authority", host.as_str()),
+            ],
+            Option::Some(record_json.as_ref()),
+            vec![],
+            Duration::from_secs(2),
+        )
+        .expect("dispatch http call error");
     }
 }
