@@ -7,6 +7,14 @@ use serde::{Deserialize, Serialize};
 use sony_flake::SonyFlakeEntity;
 use std::time::Duration;
 
+const COLLECTOR_SERVICE_UPSTREAM: &str = "collector-service";
+const OUTBOUND: &str = "outbound";
+const INBOUND: &str = "inbound";
+const BOOTSTRAP: &str = "bootstrap";
+const SHARED_QUEUE_NAME: &str = "record_json";
+const VM_ID: &str = "intercept";
+const SHARED_DATA_NAME: &str = "trace_id";
+
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Info);
     proxy_wasm::set_root_context(|_| -> Box<dyn RootContext> {
@@ -57,14 +65,14 @@ impl RootContext for PluginContext {
             self.config = serde_json::from_str(&*plugin_config).unwrap();
             info!("[{}] plugin started", self.config.plugin_type)
         }
-        if self.config.plugin_type == "bootstrap" {
-            let queue_id = self.register_shared_queue("record_json");
+        if self.config.plugin_type == BOOTSTRAP {
+            let queue_id = self.register_shared_queue(SHARED_QUEUE_NAME);
             info!(
                 "[{}] register shared queue:{}",
                 self.config.plugin_type, queue_id
             )
         } else {
-            if let Some(queue_id) = self.resolve_shared_queue("record", "record_json") {
+            if let Some(queue_id) = self.resolve_shared_queue(VM_ID, SHARED_QUEUE_NAME) {
                 self.queue_id = queue_id
             }
             info!(
@@ -81,7 +89,7 @@ impl RootContext for PluginContext {
             let host = self.config.host.as_ref().unwrap();
             let post_path = self.config.post_path.as_ref().unwrap();
             self.dispatch_http_call(
-                "record-service",
+                COLLECTOR_SERVICE_UPSTREAM,
                 vec![
                     (":method", "POST"),
                     (":path", post_path.as_str()),
@@ -100,12 +108,16 @@ impl RootContext for PluginContext {
             self.config.plugin_type, context_id
         );
         let mut trace_id: String = self.sfe.get_id(self.get_current_time()).to_string();
-        if self.config.plugin_type == "outbound" {
-            if let (Some(bytes), _cas) = self.get_shared_data("trace_id") {
+        if self.config.plugin_type == OUTBOUND {
+            if let (Some(bytes), _cas) = self.get_shared_data(SHARED_DATA_NAME) {
                 trace_id = String::from_utf8(bytes).unwrap();
             }
-        } else if self.config.plugin_type == "inbound" {
-            match self.set_shared_data("trace_id", Some(trace_id.to_string().as_bytes()), None) {
+        } else if self.config.plugin_type == INBOUND {
+            match self.set_shared_data(
+                SHARED_DATA_NAME,
+                Some(trace_id.to_string().as_bytes()),
+                None,
+            ) {
                 Ok(_) => {
                     info!(
                         "[{}] shared context id:{}",

@@ -12,9 +12,9 @@ bootstrap_extensions:
     config:
       configuration:
         "@type": type.googleapis.com/google.protobuf.StringValue
-        value: '{"plugin_type": "bootstrap","host":"httpbin.org","post_path":"/post"}'
+        value: '{"plugin_type": "bootstrap","host":"collector","post_path":"/post"}'
       vm_config:
-        vm_id: "record"
+        vm_id: "intercept"
         runtime: "envoy.wasm.runtime.v8"
         code:
           local:
@@ -57,7 +57,7 @@ static_resources:
                       "@type": type.googleapis.com/google.protobuf.StringValue
                       value: '{"plugin_type": "inbound"}'
                     vm_config:
-                      vm_id: "record"
+                      vm_id: "intercept"
                       runtime: "envoy.wasm.runtime.v8"
                       code:
                         local:
@@ -99,7 +99,7 @@ static_resources:
                           "@type": type.googleapis.com/google.protobuf.StringValue
                           value: '{"plugin_type": "outbound"}'
                         vm_config:
-                          vm_id: "record"
+                          vm_id: "intercept"
                           runtime: "envoy.wasm.runtime.v8"
                           code:
                             local:
@@ -110,17 +110,17 @@ static_resources:
     connect_timeout: 2s
     type: ORIGINAL_DST
     lb_policy: CLUSTER_PROVIDED
-  - name: record-service
+  - name: collector-service
     connect_timeout: 2s
     type: LOGICAL_DNS
     dns_lookup_family: V4_ONLY
     lb_policy: ROUND_ROBIN
     load_assignment:
-      cluster_name: sidecar
+      cluster_name: collector
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: httpbin.org
+                address: collector
                 port_value: 80
