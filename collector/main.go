@@ -9,5 +9,8 @@ func main() {
 			"message": "pong",
 		})
 	})
+	r.POST("/get_response", func(c *gin.Context) {
+		c.JSON(200, gin.H{})
+	})
 	r.Run(":80")
 }
