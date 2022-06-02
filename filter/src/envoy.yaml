@@ -12,7 +12,7 @@ bootstrap_extensions:
     config:
       configuration:
         "@type": type.googleapis.com/google.protobuf.StringValue
-        value: '{"plugin_type": "bootstrap","host":"collector","post_path":"/post"}'
+        value: '{"plugin_type": "bootstrap","host":"collector","post_path":"/collect"}'
       vm_config:
         vm_id: "intercept"
         runtime: "envoy.wasm.runtime.v8"
