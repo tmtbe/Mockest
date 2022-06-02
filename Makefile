@@ -12,3 +12,11 @@ build.collector:
 build.collector.docker:build.collector
 	cp ./collector/target/collector ./collector/docker
 	cd ./collector/docker && nerdctl build -t mockest/collector .
+
+test.sandbox:
+	nerdctl network create mockest
+	nerdctl run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name intercept  mockest/intercept
+	nerdctl run -d --network mockest --name collector  mockest/collector
+test.sandbox.clean:
+	nerdctl network rm mockest
+	nerdctl rm -f `nerdctl ps -qa`
