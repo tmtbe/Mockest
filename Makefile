@@ -2,10 +2,12 @@ build.docker: build.intercept.docker build.collector.docker
 
 build.intercept:
 	cd intercept && cargo build --target wasm32-unknown-unknown --release
-build.intercept.docker:build.intercept
-	cp ./intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./intercept/docker/data/intercept.wasm
-	cp ./intercept/envoy.yaml ./intercept/docker/data/envoy.yaml
-	cd ./intercept/docker && nerdctl build -t mockest/intercept .
+
+build.record.sidecar:build.intercept
+	cp ./envoy/envoy ./record-sidecar/docker/data/envoy
+	cp ./intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./record-sidecar/docker/data/intercept.wasm
+	cp ./record-sidecar/envoy.yaml ./record-sidecar/docker/data/envoy.yaml
+	cd ./record-sidecar/docker && nerdctl build -t mockest/intercept .
 
 build.collector:
 	cd collector && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/collector
