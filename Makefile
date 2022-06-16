@@ -3,7 +3,6 @@ clean:  clean.collector clean.record-sidecar clean.replay-sidecar clean.record-s
 
 build.record-sidecar.docker:clean.record-sidecar build.record-sidecar.intercept
 	cd record-sidecar && cp -r docker target
-	cp ./envoy/envoy ./record-sidecar/target/data/envoy
 	cp ./record-sidecar/intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./record-sidecar/target/data/intercept.wasm
 	cd ./record-sidecar/target && docker build -t mockest/record-sidecar .
 clean.record-sidecar:
@@ -15,7 +14,6 @@ clean.record-sidecar.intercept:
 
 build.replay-sidecar.docker:clean.replay-sidecar build.replay-sidecar.intercept
 	cd replay-sidecar && cp -r docker target
-	cp ./envoy/envoy ./replay-sidecar/target/data/envoy
 	cp ./replay-sidecar/intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./replay-sidecar/target/data/intercept.wasm
 	cd ./replay-sidecar/target && docker build -t mockest/replay-sidecar .
 clean.replay-sidecar:
@@ -34,9 +32,9 @@ clean.collector:
 	rm -rf ./collector/target
 
 test.sandbox:
-	nerdctl network create mockest
-	nerdctl run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name intercept  mockest/intercept
-	nerdctl run -d --network mockest --name collector  mockest/collector
+	docker network create mockest
+	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name intercept  mockest/record-sidecar
+	docker run -d --network mockest --name collector  mockest/collector
 test.sandbox.clean:
-	nerdctl network rm mockest
-	nerdctl rm -f `nerdctl ps -qa`
+	docker rm -f `docker ps -qa`
+	docker network rm mockest

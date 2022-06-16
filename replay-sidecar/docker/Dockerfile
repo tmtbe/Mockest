@@ -1,4 +1,4 @@
-FROM ubuntu:jammy
+FROM  ubuntu:jammy
 RUN apt-get update && \
   apt-get install --no-install-recommends -y \
   ca-certificates \
@@ -6,11 +6,6 @@ RUN apt-get update && \
   iptables \
   iproute2 \
   iputils-ping \
-  knot-dnsutils \
-  netcat \
-  tcpdump \
-  conntrack \
-  bsdmainutils \
   net-tools \
   lsof \
   sudo \
@@ -22,6 +17,8 @@ RUN apt-get update && \
   && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 RUN useradd -m --uid 1987 sidecar && \
    echo "sidecar ALL=NOPASSWD: ALL" >> /etc/sudoers
+
+COPY --from=envoyproxy/envoy:v1.21.2 usr/local/bin/envoy /home/sidecar
 COPY data /home/sidecar
 USER sidecar
 WORKDIR /home/sidecar

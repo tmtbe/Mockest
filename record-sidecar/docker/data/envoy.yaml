@@ -71,10 +71,10 @@ static_resources:
         application_protocols: []
       filters:
         - name: envoy.filters.network.tcp_proxy
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          stat_prefix: tcp
-          cluster: cluster-default
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+            stat_prefix: tcp
+            cluster: cluster-default
 
   - name: listener_outbound
     address:
@@ -126,10 +126,10 @@ static_resources:
         application_protocols: []
       filters:
         - name: envoy.filters.network.tcp_proxy
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          stat_prefix: tcp
-          cluster: cluster-default
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+            stat_prefix: tcp
+            cluster: cluster-default
 
   clusters:
   - name: cluster-default
