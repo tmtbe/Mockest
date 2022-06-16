@@ -1,27 +1,17 @@
-build.docker: build.record-sidecar.docker build.replay-sidecar.docker build.collector.docker
-clean:  clean.collector clean.record-sidecar clean.replay-sidecar clean.record-sidecar.intercept clean.replay-sidecar.intercept
+build.docker: build.sidecar.docker build.collector.docker
+clean:  clean.collector clean.sidecar  clean.sidecar.intercept
 
-build.record-sidecar.docker:clean.record-sidecar build.record-sidecar.intercept
-	cd record-sidecar && cp -r docker target
-	cp ./record-sidecar/intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./record-sidecar/target/data/intercept.wasm
-	cd ./record-sidecar/target && docker build -t mockest/record-sidecar .
-clean.record-sidecar:
-	rm -rf ./record-sidecar/target
-build.record-sidecar.intercept:
-	cd record-sidecar/intercept && cargo build --target wasm32-unknown-unknown --release
-clean.record-sidecar.intercept:
-	rm -rf record-sidecar/intercept/target
+build.sidecar.docker:clean.sidecar build.sidecar.intercept
+	cd sidecar && cp -r docker target
+	cp ./sidecar/intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./sidecar/target/data/intercept.wasm
+	cd ./sidecar/target && docker build -t mockest/sidecar .
+clean.sidecar:
+	rm -rf ./sidecar/target
+build.sidecar.intercept:
+	cd sidecar/intercept && cargo build --target wasm32-unknown-unknown --release
+clean.sidecar.intercept:
+	rm -rf sidecar/intercept/target
 
-build.replay-sidecar.docker:clean.replay-sidecar build.replay-sidecar.intercept
-	cd replay-sidecar && cp -r docker target
-	cp ./replay-sidecar/intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./replay-sidecar/target/data/intercept.wasm
-	cd ./replay-sidecar/target && docker build -t mockest/replay-sidecar .
-clean.replay-sidecar:
-	rm -rf ./replay-sidecar/target
-build.replay-sidecar.intercept:
-	cd replay-sidecar/intercept && cargo build --target wasm32-unknown-unknown --release
-clean.replay-sidecar.intercept:
-	rm -rf replay-sidecar/intercept/target
 
 build.collector:
 	cd collector && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/collector
@@ -33,7 +23,7 @@ clean.collector:
 
 test.sandbox:
 	docker network create mockest
-	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name intercept  mockest/record-sidecar
+	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name intercept  mockest/sidecar
 	docker run -d --network mockest --name collector  mockest/collector
 test.sandbox.clean:
 	docker rm -f `docker ps -qa`

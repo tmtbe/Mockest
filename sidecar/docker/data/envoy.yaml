@@ -12,7 +12,7 @@ bootstrap_extensions:
     config:
       configuration:
         "@type": type.googleapis.com/google.protobuf.StringValue
-        value: '{"plugin_type": "bootstrap","host":"collector","post_path":"/collect"}'
+        value: '{"plugin_type": "bootstrap","host":"collector","record_path":"/record"}'
       vm_config:
         vm_id: "intercept"
         runtime: "envoy.wasm.runtime.v8"
@@ -114,7 +114,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "outbound"}'
+                        value: '{"plugin_type": "outbound_record"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"

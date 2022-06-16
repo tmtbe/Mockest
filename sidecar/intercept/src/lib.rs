@@ -1,14 +1,15 @@
 mod sony_flake;
 
-use log::info;
+use log::{info, warn};
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
 use serde::{Deserialize, Serialize};
 use sony_flake::SonyFlakeEntity;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 const COLLECTOR_SERVICE_UPSTREAM: &str = "collector-service";
-const OUTBOUND: &str = "outbound";
+const OUTBOUND_RECORD: &str = "outbound_record";
+const OUTBOUND_REPLAY: &str = "outbound_replay";
 const INBOUND: &str = "inbound";
 const BOOTSTRAP: &str = "bootstrap";
 const SHARED_QUEUE_NAME: &str = "record_json";
@@ -22,7 +23,8 @@ proxy_wasm::main! {{
             config: PluginConfig{
                 plugin_type:"none".to_string()  ,
                 host:None,
-                post_path:None,
+                record_path:None,
+                replay_path:None,
             },
             sfe: SonyFlakeEntity::new_default(),
             queue_id: 0,
@@ -34,7 +36,8 @@ proxy_wasm::main! {{
 struct PluginConfig {
     plugin_type: String,
     host: Option<String>,
-    post_path: Option<String>,
+    record_path: Option<String>,
+    replay_path: Option<String>,
 }
 struct PluginContext {
     config: PluginConfig,
@@ -86,12 +89,12 @@ impl RootContext for PluginContext {
         if let Some(bytes) = self.dequeue_shared_queue(queue_id).expect("wrong queue") {
             info!("[{}] record", self.config.plugin_type);
             let host = self.config.host.as_ref().unwrap();
-            let post_path = self.config.post_path.as_ref().unwrap();
+            let replay_path = self.config.record_path.as_ref().unwrap();
             self.dispatch_http_call(
                 COLLECTOR_SERVICE_UPSTREAM,
                 vec![
                     (":method", "POST"),
-                    (":path", post_path.as_str()),
+                    (":path", replay_path.as_str()),
                     (":authority", host.as_str()),
                 ],
                 Option::Some(&*bytes),
@@ -107,7 +110,7 @@ impl RootContext for PluginContext {
             self.config.plugin_type, context_id
         );
         let mut trace_id: String = self.sfe.get_id(self.get_current_time()).to_string();
-        if self.config.plugin_type == OUTBOUND {
+        if self.config.plugin_type == OUTBOUND_RECORD {
             if let (Some(bytes), _cas) = self.get_shared_data(SHARED_DATA_NAME) {
                 trace_id = String::from_utf8(bytes).unwrap();
             }
@@ -133,7 +136,8 @@ impl RootContext for PluginContext {
             config: PluginConfig {
                 plugin_type: (&*self.config.plugin_type).to_string(),
                 host: None,
-                post_path: None,
+                record_path: None,
+                replay_path: None,
             },
             record: Record {
                 plugin_type: "".to_string(),
@@ -168,7 +172,39 @@ struct Record {
     response_body: Bytes,
 }
 
-impl Context for HttpFilterContext {}
+impl Context for HttpFilterContext {
+    fn on_http_call_response(
+        &mut self,
+        _token_id: u32,
+        _num_headers: usize,
+        body_size: usize,
+        _num_trailers: usize,
+    ) {
+        if let Some(body_bytes) = self.get_http_call_response_body(0, body_size) {
+            let body_str = String::from_utf8(body_bytes).unwrap();
+            let record: Record;
+            record = serde_json::from_str(&*body_str).expect("json error");
+            self.record.response_headers = record.response_headers.clone();
+            self.record.response_body = record.response_body.clone();
+            let headers: Vec<(&str, &str)> = record
+                .response_headers
+                .iter()
+                .map(|(k, v)| (k.as_ref(), v.as_ref()))
+                .collect();
+            let body = record.response_body;
+            if let Some((_, code)) = record
+                .response_headers
+                .iter()
+                .find(|(k, _)| (return k == ":status"))
+            {
+                self.send_http_response(code.parse::<u32>().unwrap(), headers, Some(body.as_ref()))
+            } else {
+                warn!("could not find status code from headers: {}", body_str);
+                self.send_http_response(500, headers, Some(body.as_ref()))
+            }
+        }
+    }
+}
 
 impl HttpContext for HttpFilterContext {
     fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
@@ -177,6 +213,24 @@ impl HttpContext for HttpFilterContext {
         }
         if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
             self.record.request_body = body_bytes
+        }
+        if self.config.plugin_type == OUTBOUND_REPLAY {
+            let host = self.config.host.as_ref().unwrap();
+            let replay_path = self.config.replay_path.as_ref().unwrap();
+            let record_json = serde_json::to_string(&self.record).expect("json error");
+            self.dispatch_http_call(
+                COLLECTOR_SERVICE_UPSTREAM,
+                vec![
+                    (":method", "POST"),
+                    (":path", replay_path.as_str()),
+                    (":authority", host.as_str()),
+                ],
+                Some(record_json.as_ref()),
+                vec![],
+                Duration::from_secs(2),
+            )
+            .expect("dispatch http call error");
+            return Action::Pause;
         }
         Action::Continue
     }
