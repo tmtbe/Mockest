@@ -23,7 +23,7 @@ clean.collector:
 
 test.sandbox:
 	docker network create mockest
-	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name intercept  mockest/sidecar
+	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name sidecar -e REPLAY=1 mockest/sidecar
 	docker run -d --network mockest --name collector  mockest/collector
 test.sandbox.clean:
 	docker rm -f `docker ps -qa`

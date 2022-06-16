@@ -114,7 +114,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "outbound_replay","replay_path":"/replay"}'
+                        value: '{"plugin_type": "outbound_replay","host":"collector","replay_path":"/replay"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"

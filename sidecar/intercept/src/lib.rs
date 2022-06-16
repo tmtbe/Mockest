@@ -1,5 +1,6 @@
 mod sony_flake;
 
+use base64::{decode, encode};
 use log::{info, warn};
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
@@ -129,23 +130,40 @@ impl RootContext for PluginContext {
                 Err(cause) => panic!("unexpected status: {:?}", cause),
             }
         }
-
+        let host;
+        if self.config.host.is_some() {
+            host = Some(self.config.host.as_ref().unwrap().to_string())
+        } else {
+            host = None
+        }
+        let replay_path;
+        if self.config.replay_path.is_some() {
+            replay_path = Some(self.config.replay_path.as_ref().unwrap().to_string())
+        } else {
+            replay_path = None
+        }
+        let record_path;
+        if self.config.record_path.is_some() {
+            record_path = Some(self.config.record_path.as_ref().unwrap().to_string())
+        } else {
+            record_path = None
+        }
         Some(Box::new(HttpFilterContext {
             trace_id,
             queue_id: self.queue_id,
             config: PluginConfig {
                 plugin_type: (&*self.config.plugin_type).to_string(),
-                host: None,
-                record_path: None,
-                replay_path: None,
+                host,
+                record_path,
+                replay_path,
             },
             record: Record {
-                plugin_type: "".to_string(),
-                trace_id: "".to_string(),
-                request_headers: vec![],
-                request_body: vec![],
+                plugin_type: None,
+                trace_id: None,
+                request_headers: None,
+                request_body: None,
                 response_headers: vec![],
-                response_body: vec![],
+                response_body: "".to_string(),
             },
         }))
     }
@@ -164,12 +182,12 @@ struct HttpFilterContext {
 
 #[derive(Serialize, Deserialize)]
 struct Record {
-    plugin_type: String,
-    trace_id: String,
-    request_headers: Vec<(String, String)>,
-    request_body: Bytes,
+    plugin_type: Option<String>,
+    trace_id: Option<String>,
+    request_headers: Option<Vec<(String, String)>>,
+    request_body: Option<String>,
     response_headers: Vec<(String, String)>,
-    response_body: Bytes,
+    response_body: String,
 }
 
 impl Context for HttpFilterContext {
@@ -183,6 +201,7 @@ impl Context for HttpFilterContext {
         if let Some(body_bytes) = self.get_http_call_response_body(0, body_size) {
             let body_str = String::from_utf8(body_bytes).unwrap();
             let record: Record;
+            info!("{}", body_str);
             record = serde_json::from_str(&*body_str).expect("json error");
             self.record.response_headers = record.response_headers.clone();
             self.record.response_body = record.response_body.clone();
@@ -191,7 +210,7 @@ impl Context for HttpFilterContext {
                 .iter()
                 .map(|(k, v)| (k.as_ref(), v.as_ref()))
                 .collect();
-            let body = record.response_body;
+            let body = base64::decode(record.response_body).expect("base64 error");
             if let Some((_, code)) = record
                 .response_headers
                 .iter()
@@ -207,29 +226,23 @@ impl Context for HttpFilterContext {
 }
 
 impl HttpContext for HttpFilterContext {
+    fn on_http_request_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
+        if end_of_stream && self.config.plugin_type == OUTBOUND_REPLAY {
+            self.call_replay();
+            return Action::Pause;
+        }
+        Action::Continue
+    }
     fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
         if !end_of_stream {
             return Action::Pause;
         }
         if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
-            self.record.request_body = body_bytes
+            let body = base64::encode(&body_bytes);
+            self.record.request_body = Some(body)
         }
         if self.config.plugin_type == OUTBOUND_REPLAY {
-            let host = self.config.host.as_ref().unwrap();
-            let replay_path = self.config.replay_path.as_ref().unwrap();
-            let record_json = serde_json::to_string(&self.record).expect("json error");
-            self.dispatch_http_call(
-                COLLECTOR_SERVICE_UPSTREAM,
-                vec![
-                    (":method", "POST"),
-                    (":path", replay_path.as_str()),
-                    (":authority", host.as_str()),
-                ],
-                Some(record_json.as_ref()),
-                vec![],
-                Duration::from_secs(2),
-            )
-            .expect("dispatch http call error");
+            self.call_replay();
             return Action::Pause;
         }
         Action::Continue
@@ -239,17 +252,38 @@ impl HttpContext for HttpFilterContext {
             return Action::Pause;
         }
         if let Some(body_bytes) = self.get_http_response_body(0, body_size) {
-            self.record.response_body = body_bytes
+            let body = base64::encode(&body_bytes);
+            self.record.response_body = body
         }
         Action::Continue
     }
     fn on_log(&mut self) {
-        self.record.request_headers = self.get_http_request_headers();
+        self.record.request_headers = Some(self.get_http_request_headers());
         self.record.response_headers = self.get_http_response_headers();
-        self.record.trace_id = (&*self.trace_id).to_string();
-        self.record.plugin_type = (&*self.config.plugin_type).to_string();
+        self.record.trace_id = Some((&*self.trace_id).to_string());
+        self.record.plugin_type = Some((&*self.config.plugin_type).to_string());
         let record_json = serde_json::to_string(&self.record).expect("json error");
         self.enqueue_shared_queue(self.queue_id, Some(record_json.as_bytes()))
             .expect("wrong enqueue shared queue");
+    }
+}
+
+impl HttpFilterContext {
+    fn call_replay(&mut self) {
+        let host = self.config.host.as_ref().unwrap();
+        let replay_path = self.config.replay_path.as_ref().unwrap();
+        let record_json = serde_json::to_string(&self.record).expect("json error");
+        self.dispatch_http_call(
+            COLLECTOR_SERVICE_UPSTREAM,
+            vec![
+                (":method", "POST"),
+                (":path", replay_path.as_str()),
+                (":authority", host.as_str()),
+            ],
+            Some(record_json.as_ref()),
+            vec![],
+            Duration::from_secs(2),
+        )
+        .expect("dispatch http call error");
     }
 }
