@@ -5,7 +5,7 @@ build.record-sidecar.docker:clean.record-sidecar build.record-sidecar.intercept
 	cd record-sidecar && cp -r docker target
 	cp ./envoy/envoy ./record-sidecar/target/data/envoy
 	cp ./record-sidecar/intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./record-sidecar/target/data/intercept.wasm
-	cd ./record-sidecar/target && nerdctl build -t mockest/record-sidecar .
+	cd ./record-sidecar/target && docker build -t mockest/record-sidecar .
 clean.record-sidecar:
 	rm -rf ./record-sidecar/target
 build.record-sidecar.intercept:
@@ -17,7 +17,7 @@ build.replay-sidecar.docker:clean.replay-sidecar build.replay-sidecar.intercept
 	cd replay-sidecar && cp -r docker target
 	cp ./envoy/envoy ./replay-sidecar/target/data/envoy
 	cp ./replay-sidecar/intercept/target/wasm32-unknown-unknown/release/intercept.wasm ./replay-sidecar/target/data/intercept.wasm
-	cd ./replay-sidecar/target && nerdctl build -t mockest/replay-sidecar .
+	cd ./replay-sidecar/target && docker build -t mockest/replay-sidecar .
 clean.replay-sidecar:
 	rm -rf ./replay-sidecar/target
 build.replay-sidecar.intercept:
@@ -29,7 +29,7 @@ build.collector:
 	cd collector && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/collector
 build.collector.docker:clean.collector
 	cd collector && cp -r docker target && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/collector
-	cd ./collector/target && nerdctl build -t mockest/collector .
+	cd ./collector/target && docker build -t mockest/collector .
 clean.collector:
 	rm -rf ./collector/target
 

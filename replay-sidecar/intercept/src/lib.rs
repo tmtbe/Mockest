@@ -57,7 +57,7 @@ impl RootContext for PluginContext {
             },
             request: Request {
                 request_headers: vec![],
-                request_body: "".to_string(),
+                request_body: vec![],
             },
         }))
     }
@@ -69,7 +69,7 @@ impl RootContext for PluginContext {
 #[derive(Serialize, Deserialize)]
 struct Request {
     request_headers: Vec<(String, String)>,
-    request_body: String,
+    request_body: Bytes,
 }
 #[derive(Serialize, Deserialize)]
 struct Response {
@@ -135,8 +135,7 @@ impl HttpContext for HttpFilterContext {
     fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
         if end_of_stream {
             if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
-                let body_str = String::from_utf8(body_bytes).unwrap();
-                self.request.request_body = body_str
+                self.request.request_body = body_bytes
             }
             self.call_collector();
         }

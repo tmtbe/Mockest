@@ -84,8 +84,7 @@ impl RootContext for PluginContext {
     }
     fn on_queue_ready(&mut self, queue_id: u32) {
         if let Some(bytes) = self.dequeue_shared_queue(queue_id).expect("wrong queue") {
-            let record = String::from_utf8(bytes).unwrap();
-            info!("[{}] record {}", self.config.plugin_type, record);
+            info!("[{}] record", self.config.plugin_type);
             let host = self.config.host.as_ref().unwrap();
             let post_path = self.config.post_path.as_ref().unwrap();
             self.dispatch_http_call(
@@ -95,7 +94,7 @@ impl RootContext for PluginContext {
                     (":path", post_path.as_str()),
                     (":authority", host.as_str()),
                 ],
-                Option::Some(record.as_ref()),
+                Option::Some(&*bytes),
                 vec![],
                 Duration::from_secs(2),
             )
@@ -140,9 +139,9 @@ impl RootContext for PluginContext {
                 plugin_type: "".to_string(),
                 trace_id: "".to_string(),
                 request_headers: vec![],
-                request_body: "".to_string(),
+                request_body: vec![],
                 response_headers: vec![],
-                response_body: "".to_string(),
+                response_body: vec![],
             },
         }))
     }
@@ -164,9 +163,9 @@ struct Record {
     plugin_type: String,
     trace_id: String,
     request_headers: Vec<(String, String)>,
-    request_body: String,
+    request_body: Bytes,
     response_headers: Vec<(String, String)>,
-    response_body: String,
+    response_body: Bytes,
 }
 
 impl Context for HttpFilterContext {}
@@ -177,8 +176,7 @@ impl HttpContext for HttpFilterContext {
             return Action::Pause;
         }
         if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
-            let body_str = String::from_utf8(body_bytes).unwrap();
-            self.record.request_body = body_str
+            self.record.request_body = body_bytes
         }
         Action::Continue
     }
@@ -187,8 +185,7 @@ impl HttpContext for HttpFilterContext {
             return Action::Pause;
         }
         if let Some(body_bytes) = self.get_http_response_body(0, body_size) {
-            let body_str = String::from_utf8(body_bytes).unwrap();
-            self.record.response_body = body_str
+            self.record.response_body = body_bytes
         }
         Action::Continue
     }
