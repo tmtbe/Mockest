@@ -15,13 +15,6 @@ pub struct SonyFlakeEntity {
 }
 
 impl SonyFlakeEntity {
-    pub fn new(nodeid: u16) -> Self {
-        SonyFlakeEntity {
-            time_stamp: AtomicU64::new(0),
-            counter: AtomicU32::new(0),
-            node_id: nodeid,
-        }
-    }
     /// 根据ip地址设置节点id，如果获取失败则设置为1
     pub fn new_default() -> Self {
         let mut nodeid = 1;
