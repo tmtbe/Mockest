@@ -75,6 +75,12 @@ struct Record {
     response_body: Option<String>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Resp {
+    response_headers: Vec<(String, String)>,
+    response_body: String,
+}
+
 struct OutboundRecordFilter {
     trace_id: String,
     config: Config,
@@ -125,6 +131,12 @@ impl HttpContext for OutboundRecordFilter {
         self.record.response_headers = Some(self.get_http_response_headers());
         self.record.trace_id = Some((&*self.trace_id).to_string());
         self.record.plugin_type = Some((&*self.config.plugin_type).to_string());
+        if let Some(body_bytes) = self.get_property(vec!["replay"]) {
+            let json = String::from_utf8(body_bytes).unwrap();
+            let resp: Resp = serde_json::from_str(json.as_str()).expect("json error");
+            self.record.response_body = Some(resp.response_body);
+            self.record.response_headers = Some(resp.response_headers);
+        }
         self.call_collector()
     }
 }

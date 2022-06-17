@@ -105,7 +105,12 @@ impl Context for OutboundReplayFilter {
                 .iter()
                 .find(|(k, _)| (return k == ":status"))
             {
-                self.send_http_response(code.parse::<u32>().unwrap(), headers, Some(body.as_ref()))
+                self.set_property(vec!["replay"], Some(body_str.as_ref()));
+                self.send_http_response(
+                    code.parse::<u32>().unwrap(),
+                    headers.clone(),
+                    Some(body.as_ref()),
+                )
             } else {
                 warn!("could not find status code from headers: {}", body_str);
                 self.send_http_response(500, headers, Some(body.as_ref()))
