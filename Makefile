@@ -21,7 +21,11 @@ build.collector.docker:clean.collector
 clean.collector:
 	rm -rf ./collector/target
 
-test.sandbox:
+test.sandbox.record:
+	docker network create mockest
+	docker run -d --network mockest --name collector  mockest/collector
+	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name sidecar mockest/sidecar
+test.sandbox.replay:
 	docker network create mockest
 	docker run -d --network mockest --name collector  mockest/collector
 	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name sidecar -e REPLAY=1 mockest/sidecar
@@ -29,5 +33,7 @@ test.sandbox:
 test.sandbox.clean:
 	docker rm -f `docker ps -qa`
 	docker network rm mockest
-test: build.docker test.sandbox.clean test.sandbox
+test.record: build.docker test.sandbox.clean test.sandbox.record
+	docker run --network=container:sidecar centos:7 curl "www.baidu.com"
+test.replay: build.docker test.sandbox.clean test.sandbox.replay
 	docker run --network=container:sidecar centos:7 curl "www.baidu.com"
