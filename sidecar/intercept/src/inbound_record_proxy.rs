@@ -94,20 +94,14 @@ impl InboundRecordFilter {
         let host = self.config.host.as_str();
         let path = self.config.path.as_str();
         let record_json = serde_json::to_string(&self.record).expect("json error");
-        match self.dispatch_http_call(
+        self.dispatch_http_call(
             COLLECTOR_SERVICE_UPSTREAM,
             vec![(":method", "POST"), (":path", path), (":authority", host)],
             Option::Some(record_json.as_ref()),
             vec![],
             Duration::from_secs(2),
-        ) {
-            Ok(e) => {
-                debug!("dispatch collector api: {:?}", e)
-            }
-            Err(e) => {
-                error!("dispatch collector api: {:?}", e)
-            }
-        }
+        )
+        .expect("dispatch http error");
     }
 }
 impl Context for InboundRecordFilter {}
