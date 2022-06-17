@@ -1,4 +1,5 @@
 use crate::COLLECTOR_SERVICE_UPSTREAM;
+use log::info;
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::Action;
 use serde::{Deserialize, Serialize};

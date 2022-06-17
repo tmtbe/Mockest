@@ -114,7 +114,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "outbound_replay","host":"collector","replay_path":"/replay_outbound"}'
+                        value: '{"plugin_type": "outbound_replay","host":"collector","path":"/replay_outbound"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"
@@ -151,7 +151,7 @@ static_resources:
     connect_timeout: 2s
     type: ORIGINAL_DST
     lb_policy: CLUSTER_PROVIDED
-  - name: collector-service
+  - name: collector
     connect_timeout: 2s
     type: LOGICAL_DNS
     dns_lookup_family: V4_ONLY

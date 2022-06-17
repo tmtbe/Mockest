@@ -1,5 +1,5 @@
 use crate::COLLECTOR_SERVICE_UPSTREAM;
-use log::warn;
+use log::{info, warn};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::Action;
 use serde::{Deserialize, Serialize};
@@ -16,8 +16,8 @@ impl Clone for Config {
     fn clone(&self) -> Self {
         return Config {
             plugin_type: self.plugin_type.clone(),
-            host: self.plugin_type.clone(),
-            path: self.plugin_type.clone(),
+            host: self.host.clone(),
+            path: self.path.clone(),
         };
     }
 }
