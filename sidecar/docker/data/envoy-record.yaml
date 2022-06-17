@@ -4,21 +4,6 @@ admin:
       protocol: TCP
       address: 0.0.0.0
       port_value: 9901
-bootstrap_extensions:
-- name: envoy.bootstrap.wasm
-  typed_config:
-    "@type": type.googleapis.com/envoy.extensions.wasm.v3.WasmService
-    singleton: true
-    config:
-      configuration:
-        "@type": type.googleapis.com/google.protobuf.StringValue
-        value: '{"plugin_type": "bootstrap","host":"collector","record_path":"/record"}'
-      vm_config:
-        vm_id: "intercept"
-        runtime: "envoy.wasm.runtime.v8"
-        code:
-          local:
-            filename: "/home/sidecar/intercept.wasm"
 static_resources:
   listeners:
   - name: listener_inbound
@@ -59,7 +44,7 @@ static_resources:
                   config:
                     configuration:
                       "@type": type.googleapis.com/google.protobuf.StringValue
-                      value: '{"plugin_type": "inbound"}'
+                      value: '{"plugin_type": "inbound_record","host":"collector","path":"/record"}'
                     vm_config:
                       vm_id: "intercept"
                       runtime: "envoy.wasm.runtime.v8"
@@ -114,7 +99,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "outbound_record"}'
+                        value: '{"plugin_type": "outbound_record","host":"collector","path":"/record"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"
@@ -136,7 +121,7 @@ static_resources:
     connect_timeout: 2s
     type: ORIGINAL_DST
     lb_policy: CLUSTER_PROVIDED
-  - name: collector-service
+  - name: collector
     connect_timeout: 2s
     type: LOGICAL_DNS
     dns_lookup_family: V4_ONLY
