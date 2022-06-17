@@ -24,7 +24,8 @@ clean.collector:
 test.sandbox:
 	docker network create mockest
 	docker run -d --network mockest --name collector  mockest/collector
-	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name sidecar -e REPLAY=1 mockest/sidecar
+	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name sidecar -e REPLAY=1 mockest/sidecar
+	docker run -d --network container:sidecar --name coredns -v ${PWD}/coredns:/etc/coredns/ coredns/coredns -conf /etc/coredns/Corefile
 test.sandbox.clean:
 	docker rm -f `docker ps -qa`
 	docker network rm mockest
