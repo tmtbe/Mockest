@@ -1,18 +1,20 @@
-mod inbound_record_proxy;
-mod inbound_replay_proxy;
-mod outbound_record_proxy;
-mod outbound_replay_proxy;
-mod sony_flake;
+use std::time::Duration;
+
+use log::info;
+use proxy_wasm::traits::*;
+use proxy_wasm::types::*;
+use serde::{Deserialize, Serialize};
 
 use crate::inbound_record_proxy::new_inbound_record_proxy;
 use crate::inbound_replay_proxy::new_inbound_replay_proxy;
 use crate::outbound_record_proxy::new_outbound_record_proxy;
 use crate::outbound_replay_proxy::new_outbound_replay_proxy;
-use log::info;
-use proxy_wasm::traits::*;
-use proxy_wasm::types::*;
-use serde::{Deserialize, Serialize};
-use std::time::Duration;
+
+mod inbound_record_proxy;
+mod inbound_replay_proxy;
+mod outbound_record_proxy;
+mod outbound_replay_proxy;
+mod sony_flake;
 
 const COLLECTOR_SERVICE_UPSTREAM: &str = "collector";
 const OUTBOUND_RECORD: &str = "outbound_record";

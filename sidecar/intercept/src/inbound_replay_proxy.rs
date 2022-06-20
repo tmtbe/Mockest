@@ -1,9 +1,11 @@
-use crate::COLLECTOR_SERVICE_UPSTREAM;
+use std::time::Duration;
+
 use log::info;
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::Action;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+
+use crate::COLLECTOR_SERVICE_UPSTREAM;
 
 #[derive(Serialize, Deserialize)]
 struct Config {

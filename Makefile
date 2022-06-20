@@ -36,4 +36,4 @@ test.sandbox.clean:
 test.record: build.docker test.sandbox.clean test.sandbox.record
 	docker run --network=container:sidecar centos:7 curl "www.baidu.com"
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
-	docker run --network=container:sidecar centos:7 curl "www.baidu.com"
+	docker run --network=container:sidecar centos:7 curl "https://www.baidu.com"

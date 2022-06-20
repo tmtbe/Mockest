@@ -1,10 +1,12 @@
-use crate::sony_flake::SonyFlakeEntity;
-use crate::{COLLECTOR_SERVICE_UPSTREAM, SHARED_DATA_NAME, SHARED_QUEUE_NAME, VM_ID};
+use std::time::Duration;
+
 use log::{debug, error, info};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::Action;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+
+use crate::{COLLECTOR_SERVICE_UPSTREAM, SHARED_DATA_NAME, SHARED_QUEUE_NAME, VM_ID};
+use crate::sony_flake::SonyFlakeEntity;
 
 #[derive(Serialize, Deserialize)]
 struct Config {

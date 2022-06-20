@@ -1,0 +1,10 @@
+-  request:
+     url: /hello
+     method: GET
+     headers:
+       xxx : aaa
+   response:
+     headers:
+       Content-Type: application/json
+     status: 200
+     body: Your request with Basic was successfully authorized!
