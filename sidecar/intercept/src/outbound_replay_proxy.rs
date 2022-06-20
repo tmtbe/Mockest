@@ -82,7 +82,14 @@ impl OutboundReplayFilter {
             )
             .expect("dispatch http call error");
         } else {
-            error!("no trace id")
+            self.send_http_response(
+                500,
+                vec![],
+                Some(
+                    "[sidecar] outbound proxy not bind any trace id, you need inbound first"
+                        .as_ref(),
+                ),
+            )
         }
     }
 }

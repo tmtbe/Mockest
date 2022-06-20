@@ -104,7 +104,7 @@ impl Context for InboundReplayFilter {
             self.send_http_response(
                 500,
                 vec![],
-                Some("inbound proxy get trace id error".as_ref()),
+                Some("[sidecar] inbound proxy get trace id error".as_ref()),
             )
         }
     }
