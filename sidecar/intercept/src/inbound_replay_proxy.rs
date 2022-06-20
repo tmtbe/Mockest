@@ -1,11 +1,10 @@
 use std::time::Duration;
 
+use crate::{R_INBOUND_TRACE_ID, SHARED_TRACE_ID_NAME};
 use log::info;
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
-use proxy_wasm::types::Action;
+use proxy_wasm::types::{Action, Bytes};
 use serde::{Deserialize, Serialize};
-
-use crate::COLLECTOR_SERVICE_UPSTREAM;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -65,20 +64,22 @@ struct InboundReplayFilter {
 }
 
 impl InboundReplayFilter {
-    fn call_collector(&mut self) {
+    fn call_collector(&mut self, body: Option<&[u8]>) {
         let host = &*self.config.host;
-        let path = &*self.config.path;
-        let req_json = serde_json::to_string(&self.req).expect("json error");
         self.dispatch_http_call(
-            COLLECTOR_SERVICE_UPSTREAM,
-            vec![(":method", "POST"), (":path", path), (":authority", host)],
-            Some(req_json.as_ref()),
+            host,
+            self.get_http_request_headers()
+                .iter()
+                .map(|(k, v)| (k.as_ref(), v.as_ref()))
+                .collect(),
+            body,
             vec![],
             Duration::from_secs(2),
         )
         .expect("dispatch http call error");
     }
 }
+
 impl Context for InboundReplayFilter {
     fn on_http_call_response(
         &mut self,
@@ -87,6 +88,19 @@ impl Context for InboundReplayFilter {
         _body_size: usize,
         _num_trailers: usize,
     ) {
+        let trace_id = self
+            .get_http_call_response_header(R_INBOUND_TRACE_ID)
+            .unwrap();
+        match self.set_shared_data(
+            SHARED_TRACE_ID_NAME,
+            Some(trace_id.to_string().as_bytes()),
+            None,
+        ) {
+            Ok(_) => {
+                info!("new trace:{}", trace_id);
+            }
+            Err(cause) => panic!("unexpected status: {:?}", cause),
+        }
         self.resume_http_request()
     }
 }
@@ -95,7 +109,7 @@ impl HttpContext for InboundReplayFilter {
     fn on_http_request_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
         self.req.request_headers = Some(self.get_http_request_headers());
         if end_of_stream {
-            self.call_collector();
+            self.call_collector(None);
             return Action::Pause;
         }
         Action::Continue
@@ -104,9 +118,11 @@ impl HttpContext for InboundReplayFilter {
         if end_of_stream {
             if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
                 let body = base64::encode(&body_bytes);
-                self.req.request_body = Some(body)
+                self.req.request_body = Some(body);
+                self.call_collector(Some(&body_bytes));
+            } else {
+                self.call_collector(None);
             }
-            self.call_collector();
         }
         Action::Pause
     }

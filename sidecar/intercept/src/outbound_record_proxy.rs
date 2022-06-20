@@ -5,8 +5,8 @@ use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, Bytes, Status};
 use serde::{Deserialize, Serialize};
 
-use crate::{COLLECTOR_SERVICE_UPSTREAM, SHARED_DATA_NAME, SHARED_QUEUE_NAME, VM_ID};
 use crate::sony_flake::SonyFlakeEntity;
+use crate::SHARED_TRACE_ID_NAME;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -47,7 +47,7 @@ impl RootContext for OutboundRecordProxy {
         let mut trace_id: String = SonyFlakeEntity::new_default()
             .get_id(self.get_current_time())
             .to_string();
-        if let (Some(bytes), _cas) = self.get_shared_data(SHARED_DATA_NAME) {
+        if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
             trace_id = String::from_utf8(bytes).unwrap();
         }
         Some(Box::new(OutboundRecordFilter {
@@ -95,7 +95,7 @@ impl OutboundRecordFilter {
         let path = self.config.path.as_str();
         let record_json = serde_json::to_string(&self.record).expect("json error");
         self.dispatch_http_call(
-            COLLECTOR_SERVICE_UPSTREAM,
+            host,
             vec![(":method", "POST"), (":path", path), (":authority", host)],
             Option::Some(record_json.as_ref()),
             vec![],
@@ -139,6 +139,7 @@ impl HttpContext for OutboundRecordFilter {
             self.record.response_body = Some(resp.response_body);
             self.record.response_headers = Some(resp.response_headers);
         }
+        info!("outbound record");
         self.call_collector()
     }
 }

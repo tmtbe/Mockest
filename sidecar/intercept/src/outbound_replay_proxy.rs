@@ -5,8 +5,6 @@ use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::Action;
 use serde::{Deserialize, Serialize};
 
-use crate::COLLECTOR_SERVICE_UPSTREAM;
-
 #[derive(Serialize, Deserialize)]
 struct Config {
     plugin_type: String,
@@ -75,7 +73,7 @@ impl OutboundReplayFilter {
         let path = &*self.config.path;
         let req_json = serde_json::to_string(&self.req).expect("json error");
         self.dispatch_http_call(
-            COLLECTOR_SERVICE_UPSTREAM,
+            host,
             vec![(":method", "POST"), (":path", path), (":authority", host)],
             Some(req_json.as_ref()),
             vec![],

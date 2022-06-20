@@ -25,6 +25,7 @@ test.sandbox.record:
 	docker network create mockest
 	docker run -d --network mockest --name collector  mockest/collector
 	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name sidecar mockest/sidecar
+	docker run -d --network=container:sidecar --name nginx nginx
 test.sandbox.replay:
 	docker network create mockest
 	docker run -d --network mockest --name collector  mockest/collector
@@ -34,6 +35,8 @@ test.sandbox.clean:
 	docker rm -f `docker ps -qa`
 	docker network rm mockest
 test.record: build.docker test.sandbox.clean test.sandbox.record
-	docker run --network=container:sidecar centos:7 curl "www.baidu.com"
+	docker run --network mockest centos:7 curl sidecar
+	docker run --network=container:sidecar centos:7 curl "http://www.baidu.com"
+	docker run --network=container:sidecar centos:7 curl -k "https://www.baidu.com"
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
-	docker run --network=container:sidecar centos:7 curl "https://www.baidu.com"
+	docker run --network=container:sidecar centos:7 curl -k "https://www.baidu.com"

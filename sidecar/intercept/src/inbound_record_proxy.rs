@@ -5,8 +5,7 @@ use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::Action;
 use serde::{Deserialize, Serialize};
 
-use crate::{COLLECTOR_SERVICE_UPSTREAM, SHARED_DATA_NAME, SHARED_QUEUE_NAME, VM_ID};
-use crate::sony_flake::SonyFlakeEntity;
+use crate::SHARED_TRACE_ID_NAME;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -42,25 +41,7 @@ impl RootContext for InboundRecordProxy {
     }
 
     fn create_http_context(&self, _context_id: u32) -> Option<Box<dyn HttpContext>> {
-        let trace_id: String = SonyFlakeEntity::new_default()
-            .get_id(self.get_current_time())
-            .to_string();
-        match self.set_shared_data(
-            SHARED_DATA_NAME,
-            Some(trace_id.to_string().as_bytes()),
-            None,
-        ) {
-            Ok(_) => {
-                info!(
-                    "[{}] shared context id:{}",
-                    self.config.as_ref().unwrap().plugin_type,
-                    trace_id
-                );
-            }
-            Err(cause) => panic!("unexpected status: {:?}", cause),
-        }
         Some(Box::new(InboundRecordFilter {
-            trace_id,
             config: self.config.as_ref().unwrap().clone(),
             record: Record {
                 plugin_type: None,
@@ -87,7 +68,6 @@ struct Record {
 }
 
 struct InboundRecordFilter {
-    trace_id: String,
     config: Config,
     record: Record,
 }
@@ -97,7 +77,7 @@ impl InboundRecordFilter {
         let path = self.config.path.as_str();
         let record_json = serde_json::to_string(&self.record).expect("json error");
         self.dispatch_http_call(
-            COLLECTOR_SERVICE_UPSTREAM,
+            host,
             vec![(":method", "POST"), (":path", path), (":authority", host)],
             Option::Some(record_json.as_ref()),
             vec![],
@@ -130,9 +110,13 @@ impl HttpContext for InboundRecordFilter {
         Action::Continue
     }
     fn on_log(&mut self) {
+        let mut trace_id = None;
+        if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
+            trace_id = Some(String::from_utf8(bytes).unwrap());
+        }
         self.record.request_headers = Some(self.get_http_request_headers());
         self.record.response_headers = Some(self.get_http_response_headers());
-        self.record.trace_id = Some((&*self.trace_id).to_string());
+        self.record.trace_id = trace_id;
         self.record.plugin_type = Some((&*self.config.plugin_type).to_string());
         self.call_collector()
     }

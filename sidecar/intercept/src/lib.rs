@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use crate::inbound_new_trace_proxy::new_inbound_new_trace_proxy;
 use log::info;
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
@@ -10,20 +11,20 @@ use crate::inbound_replay_proxy::new_inbound_replay_proxy;
 use crate::outbound_record_proxy::new_outbound_record_proxy;
 use crate::outbound_replay_proxy::new_outbound_replay_proxy;
 
+mod inbound_new_trace_proxy;
 mod inbound_record_proxy;
 mod inbound_replay_proxy;
 mod outbound_record_proxy;
 mod outbound_replay_proxy;
 mod sony_flake;
 
-const COLLECTOR_SERVICE_UPSTREAM: &str = "collector";
 const OUTBOUND_RECORD: &str = "outbound_record";
 const OUTBOUND_REPLAY: &str = "outbound_replay";
 const INBOUND_RECORD: &str = "inbound_record";
 const INBOUND_REPLAY: &str = "inbound_replay";
-const SHARED_QUEUE_NAME: &str = "record_json";
-const VM_ID: &str = "intercept";
-const SHARED_DATA_NAME: &str = "trace_id";
+const INBOUND_NEW_TRACE: &str = "inbound_new_trace";
+const SHARED_TRACE_ID_NAME: &str = "trace_id";
+const R_INBOUND_TRACE_ID: &str = "r_inbound_trace_id";
 
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Info);
@@ -56,6 +57,8 @@ impl PluginContext {
             self.active_proxy = Some(new_inbound_replay_proxy());
         } else if self.config.plugin_type == OUTBOUND_REPLAY {
             self.active_proxy = Some(new_outbound_replay_proxy());
+        } else if self.config.plugin_type == INBOUND_NEW_TRACE {
+            self.active_proxy = Some(new_inbound_new_trace_proxy());
         }
     }
 }

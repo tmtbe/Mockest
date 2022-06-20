@@ -52,7 +52,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "inbound_replay","host":"collector","path":"/replay_inbound"}'
+                        value: '{"plugin_type": "inbound_replay","host":"replay"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"
@@ -182,7 +182,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "outbound_replay","host":"collector","path":"/replay_outbound"}'
+                        value: '{"plugin_type": "outbound_replay","host":"replay"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"
@@ -290,3 +290,17 @@ static_resources:
               socket_address:
                 address: collector
                 port_value: 80
+  - name: replay
+    connect_timeout: 2s
+    type: LOGICAL_DNS
+    dns_lookup_family: V4_ONLY
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: replay
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: replay
+                    port_value: 80
