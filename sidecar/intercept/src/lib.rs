@@ -8,12 +8,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::inbound_record_proxy::new_inbound_record_proxy;
 use crate::inbound_replay_proxy::new_inbound_replay_proxy;
+use crate::inbound_serial_proxy::new_inbound_serial_proxy;
 use crate::outbound_record_proxy::new_outbound_record_proxy;
 use crate::outbound_replay_proxy::new_outbound_replay_proxy;
 
 mod inbound_new_trace_proxy;
 mod inbound_record_proxy;
 mod inbound_replay_proxy;
+mod inbound_serial_proxy;
 mod outbound_record_proxy;
 mod outbound_replay_proxy;
 mod sony_flake;
@@ -23,6 +25,7 @@ const OUTBOUND_REPLAY: &str = "outbound_replay";
 const INBOUND_RECORD: &str = "inbound_record";
 const INBOUND_REPLAY: &str = "inbound_replay";
 const INBOUND_NEW_TRACE: &str = "inbound_new_trace";
+const INBOUND_SERIAL: &str = "inbound_serial";
 const SHARED_TRACE_ID_NAME: &str = "trace_id";
 const R_INBOUND_TRACE_ID: &str = "r_inbound_trace_id";
 const R_AUTHORITY: &str = "r_authority";
@@ -60,6 +63,8 @@ impl PluginContext {
             self.active_proxy = Some(new_outbound_replay_proxy());
         } else if self.config.plugin_type == INBOUND_NEW_TRACE {
             self.active_proxy = Some(new_inbound_new_trace_proxy());
+        } else if self.config.plugin_type == INBOUND_SERIAL {
+            self.active_proxy = Some(new_inbound_serial_proxy())
         }
     }
 }
