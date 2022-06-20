@@ -25,6 +25,7 @@ const INBOUND_REPLAY: &str = "inbound_replay";
 const INBOUND_NEW_TRACE: &str = "inbound_new_trace";
 const SHARED_TRACE_ID_NAME: &str = "trace_id";
 const R_INBOUND_TRACE_ID: &str = "r_inbound_trace_id";
+const R_AUTHORITY: &str = "r_authority";
 
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Info);

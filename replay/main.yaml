@@ -1,10 +1,22 @@
 -  request:
-     url: /hello
+     url: /
      method: GET
      headers:
-       xxx : aaa
+       r_authority: replay
+   response:
+     headers:
+       Content-Type: application/json
+       r_inbound_trace_id: 1
+     status: 200
+
+-  request:
+     url: /
+     method: GET
+     headers:
+       r_inbound_trace_id: 1
+       r_authority: www.baidu.com
    response:
      headers:
        Content-Type: application/json
      status: 200
-     body: Your request with Basic was successfully authorized!
+     body: hello world

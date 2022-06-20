@@ -102,7 +102,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "inbound_replay","host":"collector","path":"/replay_inbound"}'
+                        value: '{"plugin_type": "inbound_replay","host":"replay"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"
@@ -231,7 +231,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "outbound_replay","host":"collector","path":"/replay_outbound"}'
+                        value: '{"plugin_type": "outbound_replay","host":"replay","path":"/replay_outbound"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"

@@ -31,6 +31,8 @@ test.sandbox.replay:
 	docker run -d --network mockest --name collector  mockest/collector
 	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name sidecar -e REPLAY=1 mockest/sidecar
 	docker run -d --network container:sidecar --name coredns -v ${PWD}/coredns:/etc/coredns/ coredns/coredns -conf /etc/coredns/Corefile
+	docker run -d --network=container:sidecar --name nginx nginx
+	docker run -d -v ${PWD}/replay:/home/stubby4j/data --name replay --network mockest -e STUBS_PORT=80 azagniotov/stubby4j:latest-jre11
 test.sandbox.clean:
 	docker rm -f `docker ps -qa`
 	docker network rm mockest
@@ -39,4 +41,6 @@ test.record: build.docker test.sandbox.clean test.sandbox.record
 	docker run --network=container:sidecar centos:7 curl "http://www.baidu.com"
 	docker run --network=container:sidecar centos:7 curl -k "https://www.baidu.com"
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
+	docker run --network mockest centos:7 curl sidecar
+	docker run --network=container:sidecar centos:7 curl "http://www.baidu.com"
 	docker run --network=container:sidecar centos:7 curl -k "https://www.baidu.com"

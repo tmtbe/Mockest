@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{R_INBOUND_TRACE_ID, SHARED_TRACE_ID_NAME};
+use crate::{R_AUTHORITY, R_INBOUND_TRACE_ID, SHARED_TRACE_ID_NAME};
 use log::info;
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, Bytes};
@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 struct Config {
     plugin_type: String,
     host: String,
-    path: String,
 }
 
 impl Clone for Config {
@@ -18,7 +17,6 @@ impl Clone for Config {
         return Config {
             plugin_type: self.plugin_type.clone(),
             host: self.host.clone(),
-            path: self.path.clone(),
         };
     }
 }
@@ -66,9 +64,11 @@ struct InboundReplayFilter {
 impl InboundReplayFilter {
     fn call_collector(&mut self, body: Option<&[u8]>) {
         let host = &*self.config.host;
+        let mut headers = self.get_http_request_headers();
+        headers.push((R_AUTHORITY.to_string(), host.to_string()));
         self.dispatch_http_call(
             host,
-            self.get_http_request_headers()
+            headers
                 .iter()
                 .map(|(k, v)| (k.as_ref(), v.as_ref()))
                 .collect(),
@@ -85,23 +85,28 @@ impl Context for InboundReplayFilter {
         &mut self,
         _token_id: u32,
         _num_headers: usize,
-        _body_size: usize,
+        body_size: usize,
         _num_trailers: usize,
     ) {
-        let trace_id = self
-            .get_http_call_response_header(R_INBOUND_TRACE_ID)
-            .unwrap();
-        match self.set_shared_data(
-            SHARED_TRACE_ID_NAME,
-            Some(trace_id.to_string().as_bytes()),
-            None,
-        ) {
-            Ok(_) => {
-                info!("new trace:{}", trace_id);
+        if let Some(trace_id) = self.get_http_call_response_header(R_INBOUND_TRACE_ID) {
+            match self.set_shared_data(
+                SHARED_TRACE_ID_NAME,
+                Some(trace_id.to_string().as_bytes()),
+                None,
+            ) {
+                Ok(_) => {
+                    info!("new trace:{}", trace_id);
+                }
+                Err(cause) => panic!("unexpected status: {:?}", cause),
             }
-            Err(cause) => panic!("unexpected status: {:?}", cause),
+            self.resume_http_request()
+        } else {
+            self.send_http_response(
+                500,
+                vec![],
+                Some("inbound proxy get trace id error".as_ref()),
+            )
         }
-        self.resume_http_request()
     }
 }
 
