@@ -16,7 +16,7 @@ inbound[intercept] <-> sut <-> outbound[intercept] <-> services
                     record inbound                  record outbound
 回放过程
 inbound[intercept] <-> sut <-> outbound[intercept] 
-            push -> [replayer]           redirect -> [replayer] 
+            push -> [replay]           redirect -> [replay] 
                     prepare replay data               replay data                                
 ```
 inbound intercept 将强行将请求串行化，这样才能识别inbound和outbound的关系。
@@ -24,17 +24,17 @@ inbound intercept 将强行将请求串行化，这样才能识别inbound和outb
 ## 特性
 * intercept系列功能：拦截容器中的流量 【已实现】
 * intercept系列功能：collector功能支持 【已实现】
-* intercept系列功能：inbound串行化访问，绑定inbound和outbound关系
-* intercept系列功能：replayer功能支持
-* collector系列功能：分类记录record数据
+* intercept系列功能：inbound串行化访问，绑定inbound和outbound关系 【已实现】
+* intercept系列功能：replay功能支持 【通过stubby实现】
+* collector系列功能：分类记录record数据 
 * collector系列功能：访问或下载原始录制数据
-* collector系列功能：设置数据匹配规则
-* collector系列功能：生成replayer使用的record数据
+* collector系列功能：设置数据匹配规则 【通过stubby实现】
+* collector系列功能：生成replay使用的record数据 
 * collector系列功能：生成其他mockserver使用的数据
 * collector系列功能：UI管理
-* replayer系列功能：读取record数据，获取匹配规则
-* replayer系列功能：通过request数据匹配response数据
-* replayer系列功能：动态设置mock数据
+* replay系列功能：读取record数据，获取匹配规则 【通过stubby实现】
+* replay系列功能：通过request数据匹配response数据 【通过stubby实现】
+* replay系列功能：动态设置mock数据 【通过stubby实现】
 * 提供cli工具快速上手
 
 由于全局tcp拦截的存在，我们可以实现很多动态mock的功能，不必修改代码中的host，不必分host:port提供mock server。
@@ -46,3 +46,4 @@ inbound intercept 将强行将请求串行化，这样才能识别inbound和outb
 * 学习envoyproxy以及扩展的编写
 * 采用go编写collector和replayer
 * 熟悉并了解docker的network
+* 熟悉coredns
