@@ -29,6 +29,9 @@ const INBOUND_SERIAL: &str = "inbound_serial";
 const SHARED_TRACE_ID_NAME: &str = "trace_id";
 const R_INBOUND_TRACE_ID: &str = "r_inbound_trace_id";
 const R_AUTHORITY: &str = "r_authority";
+const R_MATCH_TYPE: &str = "r_match_type";
+const R_MATCH_INBOUND: &str = "r_match_inbound";
+const R_MATCH_OUTBOUND: &str = "r_match_outbound";
 
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Info);

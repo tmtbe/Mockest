@@ -2,7 +2,7 @@
      url: /
      method: GET
      headers:
-       r_authority: replay
+       r_match_type: r_match_inbound
    response:
      headers:
        Content-Type: application/json
@@ -13,6 +13,7 @@
      url: /
      method: GET
      headers:
+       r_match_type: r_match_outbound
        r_inbound_trace_id: 1
        r_authority: www.baidu.com
    response:

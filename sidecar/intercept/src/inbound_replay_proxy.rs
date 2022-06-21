@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{R_AUTHORITY, R_INBOUND_TRACE_ID, SHARED_TRACE_ID_NAME};
+use crate::{R_AUTHORITY, R_INBOUND_TRACE_ID, R_MATCH_INBOUND, R_MATCH_TYPE, SHARED_TRACE_ID_NAME};
 use log::info;
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, Bytes};
@@ -65,7 +65,7 @@ impl InboundReplayFilter {
     fn call_collector(&mut self, body: Option<&[u8]>) {
         let host = &*self.config.host;
         let mut headers = self.get_http_request_headers();
-        headers.push((R_AUTHORITY.to_string(), host.to_string()));
+        headers.push((R_MATCH_TYPE.to_string(), R_MATCH_INBOUND.to_string()));
         self.dispatch_http_call(
             host,
             headers

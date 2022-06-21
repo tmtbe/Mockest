@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use crate::{R_AUTHORITY, R_INBOUND_TRACE_ID, SHARED_TRACE_ID_NAME};
+use crate::{
+    R_AUTHORITY, R_INBOUND_TRACE_ID, R_MATCH_OUTBOUND, R_MATCH_TYPE, SHARED_TRACE_ID_NAME,
+};
 use log::{error, info, warn};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::Action;
@@ -68,6 +70,7 @@ impl OutboundReplayFilter {
         if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
             let trace_id = String::from_utf8(bytes).unwrap();
             let mut headers = self.get_http_request_headers();
+            headers.push((R_MATCH_TYPE.to_string(), R_MATCH_OUTBOUND.to_string()));
             headers.push((R_INBOUND_TRACE_ID.to_string(), trace_id));
             headers.push((R_AUTHORITY.to_string(), authority));
             self.dispatch_http_call(
