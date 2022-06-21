@@ -23,7 +23,7 @@ clean.collector:
 
 test.sandbox.record:
 	docker network create mockest
-	docker run -d --network mockest --name collector  mockest/collector
+	docker run -d --network mockest --name collector -v ${PWD}/replay:/home  mockest/collector
 	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name sidecar mockest/sidecar
 	docker run -d --network=container:sidecar --name nginx nginx
 test.sandbox.replay:
@@ -37,11 +37,12 @@ test.sandbox.clean:
 	docker rm -f `docker ps -qa`
 	docker network rm mockest
 test.record: build.docker test.sandbox.clean test.sandbox.record
-	docker run --network mockest alpine/curl curl sidecar
-	docker run --network=container:sidecar alpine/curl curl "http://www.baidu.com"
-	docker run --network=container:sidecar alpine/curl curl -k "https://www.baidu.com"
+	docker run --network mockest alpine/curl curl sidecar/test1
+	docker run --network=container:sidecar alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%B8%80&from=poem"
+	docker run --network=container:sidecar alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%BA%8C&from=zici"
+	docker run --network mockest alpine/curl curl collector/gen
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
 	sleep 5
-	docker run --network mockest alpine/curl curl sidecar
-	docker run --network=container:sidecar alpine/curl curl "http://www.baidu.com"
-	docker run --network=container:sidecar alpine/curl curl -k "https://www.baidu.com"
+	docker run --network mockest alpine/curl curl sidecar/test1
+	docker run --network=container:sidecar alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%B8%80&from=poem"
+	docker run --network=container:sidecar alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%BA%8C&from=zici"

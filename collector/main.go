@@ -20,7 +20,7 @@ func main() {
 	})
 	r.GET("/gen", func(c *gin.Context) {
 		stubby := Gen()
-		stubby.log()
+		stubby.Write("/home")
 		c.JSON(200, gin.H{
 			"status": "OK",
 		})
