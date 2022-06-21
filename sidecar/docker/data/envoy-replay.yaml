@@ -20,6 +20,7 @@ static_resources:
     filter_chains:
     - filter_chain_match:
         transport_protocol: "tls"
+        application_protocols: ["http/1.1","h2"]
       transport_socket:
         name: envoy.transport_sockets.tls
         typed_config:
@@ -180,6 +181,7 @@ static_resources:
     filter_chains:
     - filter_chain_match:
         transport_protocol: "tls"
+        application_protocols: ["http/1.1","h2"]
       transport_socket:
         name: envoy.transport_sockets.tls
         typed_config:

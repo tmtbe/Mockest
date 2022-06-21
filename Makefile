@@ -37,11 +37,11 @@ test.sandbox.clean:
 	docker rm -f `docker ps -qa`
 	docker network rm mockest
 test.record: build.docker test.sandbox.clean test.sandbox.record
-	docker run --network mockest centos:7 curl sidecar
-	docker run --network=container:sidecar centos:7 curl "http://www.baidu.com"
-	docker run --network=container:sidecar centos:7 curl -k "https://www.baidu.com"
+	docker run --network mockest alpine/curl curl sidecar
+	docker run --network=container:sidecar alpine/curl curl "http://www.baidu.com"
+	docker run --network=container:sidecar alpine/curl curl -k "https://www.baidu.com"
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
 	sleep 5
-	docker run --network mockest centos:7 curl sidecar
-	docker run --network=container:sidecar centos:7 curl "http://www.baidu.com"
-	docker run --network=container:sidecar centos:7 curl -k "https://www.baidu.com"
+	docker run --network mockest alpine/curl curl sidecar
+	docker run --network=container:sidecar alpine/curl curl "http://www.baidu.com"
+	docker run --network=container:sidecar alpine/curl curl -k "https://www.baidu.com"
