@@ -39,10 +39,10 @@ test.sandbox.clean:
 test.record: build.docker test.sandbox.clean test.sandbox.record
 	docker run --network mockest alpine/curl curl sidecar/test1
 	docker run --network=container:sidecar alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%B8%80&from=poem"
-	docker run --network=container:sidecar alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%BA%8C&from=zici"
+	docker run --network=container:sidecar alpine/curl curl -k "https://www.bing.com/search?q=s&form=QBLH&sp=-1&pq=s&sc=8-1&qs=n&sk=&cvid=4B867E9C516F42FFAF3A9021D1ED9642"
 	docker run --network mockest alpine/curl curl collector/gen
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
 	sleep 5
 	docker run --network mockest alpine/curl curl sidecar/test1
 	docker run --network=container:sidecar alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%B8%80&from=poem"
-	docker run --network=container:sidecar alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%BA%8C&from=zici"
+	docker run --network=container:sidecar alpine/curl curl -k "https://www.bing.com/search?q=s&form=QBLH&sp=-1&pq=s&sc=8-1&qs=n&sk=&cvid=4B867E9C516F42FFAF3A9021D1ED9642"
