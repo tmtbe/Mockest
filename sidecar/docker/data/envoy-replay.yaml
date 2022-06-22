@@ -26,6 +26,7 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           common_tls_context:
+            alpn_protocols: ["h2","http/1.1"]
             tls_certificates:
               - certificate_chain: { filename: "cert/cacert.pem" }
                 private_key: { filename: "cert/privkey.pem" }
@@ -186,6 +187,7 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           common_tls_context:
+            alpn_protocols: ["h2","http/1.1"]
             tls_certificates:
               - certificate_chain: { filename: "cert/cacert.pem" }
                 private_key: { filename: "cert/privkey.pem" }
@@ -307,6 +309,16 @@ static_resources:
       name: envoy.transport_sockets.tls
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        common_tls_context:
+          alpn_protocols: [ "h2","http/1.1" ]
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        upstream_http_protocol_options:
+          auto_sni: true
+        common_http_protocol_options:
+          idle_timeout: 1s
+        auto_config: {}
   - name: collector
     connect_timeout: 2s
     type: LOGICAL_DNS
