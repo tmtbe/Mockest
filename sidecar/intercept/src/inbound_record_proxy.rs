@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use log::{debug, error, info};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
-use proxy_wasm::types::Action;
+use proxy_wasm::types::{Action, Bytes};
 use serde::{Deserialize, Serialize};
 
 use crate::SHARED_TRACE_ID_NAME;
@@ -40,7 +40,7 @@ impl RootContext for InboundRecordProxy {
         return true;
     }
 
-    fn create_http_context(&self, _context_id: u32) -> Option<Box<dyn HttpContext>> {
+    fn create_http_context(&self, context_id: u32) -> Option<Box<dyn HttpContext>> {
         Some(Box::new(InboundRecordFilter {
             config: self.config.as_ref().unwrap().clone(),
             record: Record {
@@ -51,6 +51,9 @@ impl RootContext for InboundRecordProxy {
                 response_headers: None,
                 response_body: None,
             },
+            context_id,
+            request_body: vec![],
+            response_body: vec![],
         }))
     }
 }
@@ -70,6 +73,9 @@ struct Record {
 struct InboundRecordFilter {
     config: Config,
     record: Record,
+    context_id: u32,
+    request_body: Bytes,
+    response_body: Bytes,
 }
 impl InboundRecordFilter {
     fn call_collector(&self) {
@@ -89,23 +95,16 @@ impl InboundRecordFilter {
 impl Context for InboundRecordFilter {}
 
 impl HttpContext for InboundRecordFilter {
-    fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
-        if !end_of_stream {
-            return Action::Pause;
-        }
-        if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
-            let body = base64::encode(&body_bytes);
-            self.record.request_body = Some(body)
+    fn on_http_request_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
+        if let Some(mut body_bytes) = self.get_http_request_body(0, body_size) {
+            self.request_body.append(body_bytes.as_mut());
         }
         Action::Continue
     }
-    fn on_http_response_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
-        if !end_of_stream {
-            return Action::Pause;
-        }
-        if let Some(body_bytes) = self.get_http_response_body(0, body_size) {
-            let body = base64::encode(&body_bytes);
-            self.record.response_body = Some(body)
+
+    fn on_http_response_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
+        if let Some(mut body_bytes) = self.get_http_response_body(0, body_size) {
+            self.response_body.append(body_bytes.as_mut());
         }
         Action::Continue
     }
@@ -118,6 +117,12 @@ impl HttpContext for InboundRecordFilter {
         self.record.response_headers = Some(self.get_http_response_headers());
         self.record.trace_id = trace_id;
         self.record.plugin_type = Some((&*self.config.plugin_type).to_string());
+        if self.response_body.len() > 0 {
+            self.record.response_body = Some(base64::encode(&self.response_body))
+        }
+        if self.request_body.len() > 0 {
+            self.record.request_body = Some(base64::encode(&self.request_body))
+        }
         self.call_collector()
     }
 }

@@ -43,7 +43,7 @@ impl RootContext for OutboundRecordProxy {
         return true;
     }
 
-    fn create_http_context(&self, _context_id: u32) -> Option<Box<dyn HttpContext>> {
+    fn create_http_context(&self, context_id: u32) -> Option<Box<dyn HttpContext>> {
         let mut trace_id: String = SonyFlakeEntity::new_default()
             .get_id(self.get_current_time())
             .to_string();
@@ -61,6 +61,9 @@ impl RootContext for OutboundRecordProxy {
                 response_headers: None,
                 response_body: None,
             },
+            context_id,
+            request_body: vec![],
+            response_body: vec![],
         }))
     }
 }
@@ -87,6 +90,9 @@ struct OutboundRecordFilter {
     trace_id: String,
     config: Config,
     record: Record,
+    context_id: u32,
+    request_body: Bytes,
+    response_body: Bytes,
 }
 
 impl OutboundRecordFilter {
@@ -108,31 +114,31 @@ impl OutboundRecordFilter {
 impl Context for OutboundRecordFilter {}
 
 impl HttpContext for OutboundRecordFilter {
-    fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
-        if !end_of_stream {
-            return Action::Pause;
-        }
-        if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
-            let body = base64::encode(&body_bytes);
-            self.record.request_body = Some(body)
+    fn on_http_request_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
+        if let Some(mut body_bytes) = self.get_http_request_body(0, body_size) {
+            self.request_body.append(body_bytes.as_mut());
         }
         Action::Continue
     }
-    fn on_http_response_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
-        if !end_of_stream {
-            return Action::Pause;
-        }
-        if let Some(body_bytes) = self.get_http_response_body(0, body_size) {
-            let body = base64::encode(&body_bytes);
-            self.record.response_body = Some(body)
+
+    fn on_http_response_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
+        if let Some(mut body_bytes) = self.get_http_response_body(0, body_size) {
+            self.response_body.append(body_bytes.as_mut());
         }
         Action::Continue
     }
+
     fn on_log(&mut self) {
         self.record.request_headers = Some(self.get_http_request_headers());
         self.record.response_headers = Some(self.get_http_response_headers());
         self.record.trace_id = Some((&*self.trace_id).to_string());
         self.record.plugin_type = Some((&*self.config.plugin_type).to_string());
+        if self.response_body.len() > 0 {
+            self.record.response_body = Some(base64::encode(&self.response_body))
+        }
+        if self.request_body.len() > 0 {
+            self.record.request_body = Some(base64::encode(&self.request_body))
+        }
         if let Some(body_bytes) = self.get_property(vec!["replay"]) {
             let json = String::from_utf8(body_bytes).unwrap();
             let resp: Resp = serde_json::from_str(json.as_str()).expect("json error");

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/gin-gonic/gin"
-	"log"
 )
 
 func main() {
@@ -12,8 +10,6 @@ func main() {
 		record := &Record{}
 		_ = c.BindJSON(record)
 		addRecord(record)
-		marshal, _ := json.Marshal(record)
-		log.Println(string(marshal))
 		c.JSON(200, gin.H{
 			"status": "OK",
 		})
