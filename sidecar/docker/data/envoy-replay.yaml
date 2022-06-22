@@ -20,6 +20,18 @@ static_resources:
     filter_chains:
     - filter_chain_match:
         transport_protocol: "tls"
+        destination_port: 443
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          common_tls_context:
+            alpn_protocols: ["h2","http/1.1"]
+            tls_certificates:
+              - certificate_chain: { filename: "cert/cacert.pem" }
+                private_key: { filename: "cert/privkey.pem" }
+    - filter_chain_match:
+        transport_protocol: "tls"
         application_protocols: ["http/1.0","http/1.1","h2"]
       transport_socket:
         name: envoy.transport_sockets.tls
@@ -179,6 +191,18 @@ static_resources:
       - name: envoy.filters.listener.original_dst
         typed_config: {}
     filter_chains:
+    - filter_chain_match:
+        transport_protocol: "tls"
+        destination_port: 443
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          common_tls_context:
+            alpn_protocols: ["h2","http/1.1"]
+            tls_certificates:
+              - certificate_chain: { filename: "cert/cacert.pem" }
+                private_key: { filename: "cert/privkey.pem" }
     - filter_chain_match:
         transport_protocol: "tls"
         application_protocols: ["http/1.0","http/1.1","h2"]
