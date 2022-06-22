@@ -1,49 +1,35 @@
 # Mockest
-项目开展中。。也招募志同道合的小伙伴们共同参与。
-
-## 项目背景
-* 在很多传统企业做遗留项目改造的过程中
-* 在大型项目进行组件测试的过程中
-你是否因为准备依赖测试的mock server而头疼，你是否因为要为遗留项目补充测试用例而头疼。
-Mockest通过拦截被测应用的请求可以实现无侵入的数据录制功能，通过回放录制数据达到mock server的效果。
+Mockest无侵入的对被测应用的入口和出口流量拦截录制，实现被测应用外部依赖回放的能力。
+* 在很多传统企业做遗留项目改造的过程中，缺乏相关测试，通过Mockest可以快速进行场景录制，将遗留项目的依赖录制下来进行回放，减轻手动编写大量Mock Server的工作。
+* 在大型项目进行组件测试的过程中，同样也可以利用录制回放的能力减少手动编写Mock Server的工作。
+* Mockest对录制对象无任何改造，只需按照步奏将被录制的对象运行在容器中即可。
+* Mockest录制的结果为Stubby4j/4node支持的文件格式，通过一个Stubby4J实现所有外部依赖服务的Mock。
 
 ## 原理
-类似istio的流量拦截，我们也是通过envoy拦截容器inbound，outbound的流量。
+* 通过envoy+iptables实现透明代理，所有的流量将被collector收集
+* collector将收集到的所有流量进行整理生成用于回放的replay文件
+* replay服务（Stubby）将读取replay文件进行mock
+* coredns将强制解析外部的域名到0.0.0.0
+
+## 如何使用
+## 安装
+```shell
+    make build.docker
 ```
-录制过程
-inbound[intercept] <-> sut <-> outbound[intercept] <-> services
-            push -> [collector]             push -> [collector] 
-                    record inbound                  record outbound
-回放过程
-inbound[intercept] <-> sut <-> outbound[intercept] 
-            push -> [replay]           redirect -> [replay] 
-                    prepare replay data               replay data                                
+其中用nginx模拟被测应用
+## record例子
+```shell
+	docker network create mockest
+	docker run -d --network mockest --name collector -v ${PWD}/replay:/home  mockest/collector
+	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name sidecar mockest/sidecar
+	docker run -d --network=container:sidecar --name nginx nginx
 ```
-inbound intercept 将强行将请求串行化，这样才能识别inbound和outbound的关系。
-
-## 特性
-* intercept系列功能：拦截容器中的流量 【已实现】
-* intercept系列功能：collector功能支持 【已实现】
-* intercept系列功能：inbound串行化访问，绑定inbound和outbound关系 【已实现】
-* intercept系列功能：replay功能支持 【通过stubby实现】
-* collector系列功能：分类记录record数据 
-* collector系列功能：访问或下载原始录制数据
-* collector系列功能：设置数据匹配规则 【通过stubby实现】
-* collector系列功能：生成replay使用的record数据 
-* collector系列功能：生成其他mockserver使用的数据
-* collector系列功能：UI管理
-* replay系列功能：读取record数据，获取匹配规则 【通过stubby实现】
-* replay系列功能：通过request数据匹配response数据 【通过stubby实现】
-* replay系列功能：动态设置mock数据 【通过stubby实现】
-* 提供cli工具快速上手
-
-由于全局tcp拦截的存在，我们可以实现很多动态mock的功能，不必修改代码中的host，不必分host:port提供mock server。
-
-## 加入该项目你可能需要了解的知识
-* 测试理论
-* 语言rust go，其中rust用作envoy扩展的编写
-* 了解iptables的配置规则
-* 学习envoyproxy以及扩展的编写
-* 采用go编写collector和replayer
-* 熟悉并了解docker的network
-* 熟悉coredns
+## replay例子
+```shell
+    docker network create mockest
+	docker run -d --network mockest --name collector  mockest/collector
+	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name sidecar -e REPLAY=1 mockest/sidecar
+	docker run -d --network container:sidecar --name coredns -v ${PWD}/coredns:/etc/coredns/ coredns/coredns -conf /etc/coredns/Corefile
+	docker run -d --network=container:sidecar --name nginx nginx
+	docker run -d -v ${PWD}/replay:/home/stubby4j/data --name replay --network mockest -e STUBS_PORT=80 azagniotov/stubby4j:latest-jre11
+```
