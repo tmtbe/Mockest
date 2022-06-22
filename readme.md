@@ -16,20 +16,11 @@ Mockest无侵入的对被测应用的入口和出口流量拦截录制，实现�
 ```shell
     make build.docker
 ```
-其中用nginx模拟被测应用
 ## record例子
 ```shell
-	docker network create mockest
-	docker run -d --network mockest --name collector -v ${PWD}/replay:/home  mockest/collector
-	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name sidecar mockest/sidecar
-	docker run -d --network=container:sidecar --name nginx nginx
+	make test.record
 ```
 ## replay例子
 ```shell
-    docker network create mockest
-	docker run -d --network mockest --name collector  mockest/collector
-	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name sidecar -e REPLAY=1 mockest/sidecar
-	docker run -d --network container:sidecar --name coredns -v ${PWD}/coredns:/etc/coredns/ coredns/coredns -conf /etc/coredns/Corefile
-	docker run -d --network=container:sidecar --name nginx nginx
-	docker run -d -v ${PWD}/replay:/home/stubby4j/data --name replay --network mockest -e STUBS_PORT=80 azagniotov/stubby4j:latest-jre11
+   make test.replay
 ```
