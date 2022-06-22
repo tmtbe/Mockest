@@ -22,7 +22,7 @@ static_resources:
     filter_chains:
     - filter_chain_match:
         transport_protocol: "tls"
-        application_protocols: ["http/1.1","h2"]
+        application_protocols: ["http/1.0","http/1.1","h2"]
       transport_socket:
         name: envoy.transport_sockets.tls
         typed_config:
@@ -94,8 +94,7 @@ static_resources:
                             filename: "/home/sidecar/intercept.wasm"
               - name: envoy.filters.http.router
     - filter_chain_match:
-        application_protocols: ["http/1.1"]
-        transport_protocol: "raw_buffer"
+        application_protocols: ["http/1.0","http/1.1"]
       filters:
         - name: envoy.filters.network.http_connection_manager
           typed_config:
@@ -158,9 +157,7 @@ static_resources:
                           local:
                             filename: "/home/sidecar/intercept.wasm"
               - name: envoy.filters.http.router
-    - filter_chain_match:
-        application_protocols: []
-      filters:
+    - filters:
         - name: envoy.filters.network.tcp_proxy
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -183,7 +180,7 @@ static_resources:
     filter_chains:
     - filter_chain_match:
         transport_protocol: "tls"
-        application_protocols: ["http/1.1","h2"]
+        application_protocols: ["http/1.0","http/1.1","h2"]
       transport_socket:
         name: envoy.transport_sockets.tls
         typed_config:
@@ -225,8 +222,7 @@ static_resources:
                             filename: "/home/sidecar/intercept.wasm"
               - name: envoy.filters.http.router
     - filter_chain_match:
-        application_protocols: ["http/1.1"]
-        transport_protocol: "raw_buffer"
+        application_protocols: ["http/1.0","http/1.1"]
       filters:
         - name: envoy.filters.network.http_connection_manager
           typed_config:
@@ -259,9 +255,7 @@ static_resources:
                           local:
                             filename: "/home/sidecar/intercept.wasm"
               - name: envoy.filters.http.router
-    - filter_chain_match:
-        application_protocols: []
-      filters:
+    - filters:
         - name: envoy.filters.network.tcp_proxy
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
