@@ -27,31 +27,16 @@ spec:
           ports:
             - containerPort: 5000
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Service
 metadata:
-  name: helloworld-v2
+  name: helloworld-v1
   labels:
     app: helloworld
-    version: v2
+    service: helloworld
 spec:
-  replicas: 1
+  ports:
+    - port: 5000
+      name: http
   selector:
-    matchLabels:
-      app: helloworld
-      version: v2
-  template:
-    metadata:
-      labels:
-        app: helloworld
-        version: v2
-    spec:
-      containers:
-        - name: helloworld
-          image: docker.io/istio/examples-helloworld-v2
-          resources:
-            requests:
-              cpu: "100m"
-          imagePullPolicy: IfNotPresent #Always
-          ports:
-            - containerPort: 5000
+    app: helloworld
