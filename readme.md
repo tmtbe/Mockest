@@ -12,15 +12,18 @@ Mockest无侵入的对被测应用的入口和出口流量拦截录制，实现�
 * coredns将强制解析外部的域名到0.0.0.0
 
 ## 如何使用
-## 安装
+## 镜像
+* tmtbe/mockest-proxy:latest
+* tmtbe/mockest-k8s-inject:latest
+### 安装
 ```shell
     make build.docker
 ```
-## record例子
+### record例子
 ```shell
 	make test.record
 ```
-## replay例子
+### replay例子
 ```shell
    make test.replay
 ```
