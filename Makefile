@@ -35,9 +35,11 @@ clean.k8s.inejct:
 	rm -rf k8s/inject/target
 
 deploy.docker: build.docker
+	docker tag mockest/collector tmtbe/mockest-collector
 	docker tag mockest/proxy tmtbe/mockest-proxy
 	docker tag mockest/k8s-inject tmtbe/mockest-k8s-inject
 	docker push tmtbe/mockest-proxy:latest
+	docker push tmtbe/mockest-collector:latest
 	docker push tmtbe/mockest-k8s-inject:latest
 
 test.sandbox.record:

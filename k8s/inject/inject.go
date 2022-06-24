@@ -23,7 +23,7 @@ func inject(deployment *v1.Deployment) *v1.Deployment {
 		Name:            "mockest-init",
 		Image:           proxyImage,
 		Args:            []string{"init"},
-		ImagePullPolicy: cv1.PullIfNotPresent,
+		ImagePullPolicy: cv1.PullAlways,
 		SecurityContext: &cv1.SecurityContext{
 			Capabilities: &cv1.Capabilities{
 				Add: []cv1.Capability{
@@ -47,9 +47,10 @@ func inject(deployment *v1.Deployment) *v1.Deployment {
 	}
 	deployment.Spec.Template.Spec.InitContainers = append(deployment.Spec.Template.Spec.InitContainers, initContainer)
 	proxyContainer := cv1.Container{
-		Name:  "mockest-proxy",
-		Image: proxyImage,
-		Args:  []string{"proxy"},
+		Name:            "mockest-proxy",
+		Image:           proxyImage,
+		Args:            []string{"proxy"},
+		ImagePullPolicy: cv1.PullAlways,
 		SecurityContext: &cv1.SecurityContext{
 			Capabilities: &cv1.Capabilities{
 				Drop: []cv1.Capability{

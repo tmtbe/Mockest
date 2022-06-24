@@ -72,7 +72,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.wasm
                 typed_config:
                   "@type": type.googleapis.com/udpa.type.v1.TypedStruct
@@ -87,7 +87,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.wasm
                 typed_config:
                   "@type": type.googleapis.com/udpa.type.v1.TypedStruct
@@ -102,7 +102,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.router
     - filter_chain_match:
         application_protocols: ["http/1.0","http/1.1"]
@@ -136,7 +136,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.wasm
                 typed_config:
                   "@type": type.googleapis.com/udpa.type.v1.TypedStruct
@@ -151,7 +151,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.wasm
                 typed_config:
                   "@type": type.googleapis.com/udpa.type.v1.TypedStruct
@@ -166,7 +166,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.router
     - filter_chain_match:
         application_protocols: []
@@ -233,7 +233,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.wasm
                 typed_config:
                   "@type": type.googleapis.com/udpa.type.v1.TypedStruct
@@ -248,7 +248,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.router
     - filter_chain_match:
         transport_protocol: "tls"
@@ -292,7 +292,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.wasm
                 typed_config:
                   "@type": type.googleapis.com/udpa.type.v1.TypedStruct
@@ -307,7 +307,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.router
     - filter_chain_match:
         application_protocols: ["http/1.0","http/1.1","http/2"]
@@ -341,7 +341,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.wasm
                 typed_config:
                   "@type": type.googleapis.com/udpa.type.v1.TypedStruct
@@ -356,7 +356,7 @@ static_resources:
                         runtime: "envoy.wasm.runtime.v8"
                         code:
                           local:
-                            filename: "/home/sidecar/intercept.wasm"
+                            filename: "/home/intercept.wasm"
               - name: envoy.filters.http.router
     - filter_chain_match:
         application_protocols: []

@@ -18,8 +18,8 @@ RUN apt-get update && \
 RUN useradd -m --uid 1987 sidecar && \
    echo "sidecar ALL=NOPASSWD: ALL" >> /etc/sudoers
 
-COPY --from=envoyproxy/envoy:v1.21.2  usr/local/bin/envoy /home/sidecar
-COPY data /home/sidecar
+COPY --from=envoyproxy/envoy:v1.21.2  usr/local/bin/envoy /home
+COPY data /home
 USER sidecar
-WORKDIR /home/sidecar
+WORKDIR /home
 ENTRYPOINT ["./proxy"]

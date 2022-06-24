@@ -39,7 +39,7 @@ func main() {
 }
 
 func initRun(*cobra.Command, []string) {
-	setIptables()
+	setIptablesWithRoot()
 }
 
 func proxyRun(c *cobra.Command, _ []string) {
@@ -71,7 +71,12 @@ func setIptables() {
 	runCmd("sudo", "iptables", "-t", "nat", "-A", "OUTPUT", "-p", "tcp", "-j", "REDIRECT", "--to-ports", "15001")
 	runCmd("sudo", "iptables", "-t", "nat", "-A", "PREROUTING", "-p", "tcp", "-j", "REDIRECT", "--to-ports", "15000")
 }
-
+func setIptablesWithRoot() {
+	runCmd("iptables", "-t", "nat", "-A", "INPUT", "-p", "tcp", "-j", "ACCEPT")
+	runCmd("iptables", "-t", "nat", "-A", "OUTPUT", "-p", "tcp", "-m", "owner", "--uid-owner", "1987", "-j", "ACCEPT")
+	runCmd("iptables", "-t", "nat", "-A", "OUTPUT", "-p", "tcp", "-j", "REDIRECT", "--to-ports", "15001")
+	runCmd("iptables", "-t", "nat", "-A", "PREROUTING", "-p", "tcp", "-j", "REDIRECT", "--to-ports", "15000")
+}
 func runEnvoy(replay bool) {
 	if !replay {
 		runCmd("./envoy", "-c", "envoy-record.yaml")
