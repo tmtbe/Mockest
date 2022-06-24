@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"log"
 )
 
 func main() {
@@ -9,6 +10,7 @@ func main() {
 	r.POST("/record", func(c *gin.Context) {
 		record := &Record{}
 		_ = c.BindJSON(record)
+		log.Printf(record.PluginType)
 		addRecord(record)
 		c.JSON(200, gin.H{
 			"status": "OK",

@@ -289,37 +289,7 @@ static_resources:
                     config:
                       configuration:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "inbound_serial"}'
-                      vm_config:
-                        vm_id: "intercept"
-                        runtime: "envoy.wasm.runtime.v8"
-                        code:
-                          local:
-                            filename: "/home/sidecar/intercept.wasm"
-              - name: envoy.filters.http.wasm
-                typed_config:
-                  "@type": type.googleapis.com/udpa.type.v1.TypedStruct
-                  type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
-                  value:
-                    config:
-                      configuration:
-                        "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "inbound_new_trace"}'
-                      vm_config:
-                        vm_id: "intercept"
-                        runtime: "envoy.wasm.runtime.v8"
-                        code:
-                          local:
-                            filename: "/home/sidecar/intercept.wasm"
-              - name: envoy.filters.http.wasm
-                typed_config:
-                  "@type": type.googleapis.com/udpa.type.v1.TypedStruct
-                  type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
-                  value:
-                    config:
-                      configuration:
-                        "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"plugin_type": "inbound_record","host":"collector","path":"/record"}'
+                        value: '{"plugin_type": "outbound_record","host":"collector","path":"/record"}'
                       vm_config:
                         vm_id: "intercept"
                         runtime: "envoy.wasm.runtime.v8"

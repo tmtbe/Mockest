@@ -203,6 +203,53 @@ static_resources:
             tls_certificates:
               - certificate_chain: { filename: "cert/cacert.pem" }
                 private_key: { filename: "cert/privkey.pem" }
+      filters:
+        - name: envoy.filters.network.http_connection_manager
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            stat_prefix: ingress_http
+            route_config:
+              name: myroute
+              virtual_hosts:
+                - name: myservice
+                  domains: ["*"]
+                  routes:
+                    match:
+                      prefix: "/"
+                    route:
+                      cluster: cluster-default-tls
+            http_filters:
+              - name: envoy.filters.http.wasm
+                typed_config:
+                  "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+                  type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+                  value:
+                    config:
+                      configuration:
+                        "@type": type.googleapis.com/google.protobuf.StringValue
+                        value: '{"plugin_type": "outbound_replay","host":"replay"}'
+                      vm_config:
+                        vm_id: "intercept"
+                        runtime: "envoy.wasm.runtime.v8"
+                        code:
+                          local:
+                            filename: "/home/sidecar/intercept.wasm"
+              - name: envoy.filters.http.wasm
+                typed_config:
+                  "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+                  type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+                  value:
+                    config:
+                      configuration:
+                        "@type": type.googleapis.com/google.protobuf.StringValue
+                        value: '{"plugin_type": "outbound_record","host":"collector","path":"/record"}'
+                      vm_config:
+                        vm_id: "intercept"
+                        runtime: "envoy.wasm.runtime.v8"
+                        code:
+                          local:
+                            filename: "/home/sidecar/intercept.wasm"
+              - name: envoy.filters.http.router
     - filter_chain_match:
         transport_protocol: "tls"
         application_protocols: ["http/1.0","http/1.1","h2"]

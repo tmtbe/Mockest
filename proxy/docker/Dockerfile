@@ -22,4 +22,4 @@ COPY --from=envoyproxy/envoy:v1.21.2  usr/local/bin/envoy /home/sidecar
 COPY data /home/sidecar
 USER sidecar
 WORKDIR /home/sidecar
-CMD sh ./run.sh
+ENTRYPOINT ["./proxy"]
