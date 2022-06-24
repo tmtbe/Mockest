@@ -3,6 +3,8 @@ package main
 import v1 "k8s.io/api/apps/v1"
 import cv1 "k8s.io/api/core/v1"
 
+const proxyImage = "tmtbe/mockest-proxy:latest"
+
 func inject(deployment *v1.Deployment) *v1.Deployment {
 	var (
 		user                        int64 = 0
@@ -19,7 +21,7 @@ func inject(deployment *v1.Deployment) *v1.Deployment {
 
 	initContainer := cv1.Container{
 		Name:            "mockest-init",
-		Image:           "mockest/proxy:latest",
+		Image:           proxyImage,
 		Args:            []string{"init"},
 		ImagePullPolicy: cv1.PullIfNotPresent,
 		SecurityContext: &cv1.SecurityContext{
@@ -46,7 +48,7 @@ func inject(deployment *v1.Deployment) *v1.Deployment {
 	deployment.Spec.Template.Spec.InitContainers = append(deployment.Spec.Template.Spec.InitContainers, initContainer)
 	proxyContainer := cv1.Container{
 		Name:  "mockest-proxy",
-		Image: "mockest/proxy:latest",
+		Image: proxyImage,
 		Args:  []string{"proxy"},
 		SecurityContext: &cv1.SecurityContext{
 			Capabilities: &cv1.Capabilities{

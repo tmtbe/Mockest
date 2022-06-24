@@ -13,13 +13,13 @@ build.proxy.intercept:
 clean.proxy.intercept:
 	rm -rf proxy/intercept/target
 build.proxy.cmd:
-	cd proxy/cmd && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/proxy
+	cd proxy/cmd && go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/proxy
 clean.proxy.cmd:
 	rm -rf proxy/cmd/target
 
 
 build.collector:
-	cd collector && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/collector
+	cd collector && go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/collector
 build.collector.docker:clean.collector
 	cd collector && cp -r docker target && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/collector
 	cd ./collector/target && docker build -t mockest/collector .
@@ -30,6 +30,10 @@ build.k8s.inject:
 	cd k8s/inject && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/inject
 clean.k8s.inejct:
 	rm -rf k8s/inject/target
+
+deploy.docker: build.docker
+	docker tag mockest/proxy tmtbe/mockest-proxy
+	docker push tmtbe/mockest-proxy:latest
 
 test.sandbox.record:
 	docker network create mockest
