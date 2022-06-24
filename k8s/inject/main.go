@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/apps/v1"
 	"os"
@@ -39,5 +40,5 @@ func injectRun(c *cobra.Command, _ []string) {
 	if err != nil {
 		panic(err)
 	}
-	println(string(marshal))
+	fmt.Println(string(marshal))
 }
