@@ -26,6 +26,11 @@ build.collector.docker:clean.collector
 clean.collector:
 	rm -rf ./collector/target
 
+build.k8s.inject:
+	cd k8s/inject && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./target/inject
+clean.k8s.inejct:
+	rm -rf k8s/inject/target
+
 test.sandbox.record:
 	docker network create mockest
 	docker run -d --network mockest --name collector -v ${PWD}/replay:/home  mockest/collector

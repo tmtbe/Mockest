@@ -1,4 +1,4 @@
-module github.com/tetratelabs/proxy-wasm-go-sdk/examples/http_body
+module proxy
 
 go 1.17
 
