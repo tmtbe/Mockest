@@ -30,11 +30,11 @@ func injectRun(c *cobra.Command, _ []string) {
 		panic(err)
 	}
 	deployment := &v1.Deployment{}
-	inject(deployment)
 	err = yaml.Unmarshal(k8sFile, deployment)
 	if err != nil {
 		panic(err)
 	}
+	deployment = inject(deployment)
 	marshal, err := yaml.Marshal(deployment)
 	if err != nil {
 		panic(err)

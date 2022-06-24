@@ -3,7 +3,7 @@ package main
 import v1 "k8s.io/api/apps/v1"
 import cv1 "k8s.io/api/core/v1"
 
-func inject(deployment *v1.Deployment) {
+func inject(deployment *v1.Deployment) *v1.Deployment {
 	var (
 		user                        int64 = 0
 		group                       int64 = 0
@@ -62,5 +62,11 @@ func inject(deployment *v1.Deployment) {
 			Privileged:               &privileged,
 		},
 	}
-	deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, proxyContainer)
+	containers := make([]cv1.Container, len(deployment.Spec.Template.Spec.Containers)+1)
+	containers[0] = proxyContainer
+	for i, c := range deployment.Spec.Template.Spec.Containers {
+		containers[i+1] = c
+	}
+	deployment.Spec.Template.Spec.Containers = containers
+	return deployment
 }
