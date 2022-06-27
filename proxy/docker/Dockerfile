@@ -1,4 +1,4 @@
-FROM  ubuntu:jammy
+FROM  --platform=linux/arm64/v8 ubuntu:jammy
 RUN apt-get update && \
   apt-get install --no-install-recommends -y \
   ca-certificates \

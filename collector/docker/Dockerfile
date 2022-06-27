@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 scratch
+FROM --platform=linux/arm64/v8 scratch
 WORKDIR /app
 COPY collector .
 EXPOSE 80
