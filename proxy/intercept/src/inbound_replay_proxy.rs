@@ -64,8 +64,12 @@ struct InboundReplayFilter {
 impl InboundReplayFilter {
     fn call_collector(&mut self, body: Option<&[u8]>) {
         let host = &*self.config.host;
-        let mut headers = self.get_http_request_headers();
+        let mut headers = self.req.request_headers.as_ref().unwrap().clone();
         headers.push((R_MATCH_TYPE.to_string(), R_MATCH_INBOUND.to_string()));
+        info!(
+            "[inbound_replay] call: {}",
+            serde_json::to_string(&headers).unwrap()
+        );
         self.dispatch_http_call(
             host,
             headers
