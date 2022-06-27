@@ -42,6 +42,7 @@ impl RootContext for OutboundReplayProxy {
     fn create_http_context(&self, _context_id: u32) -> Option<Box<dyn HttpContext>> {
         Some(Box::new(OutboundReplayFilter {
             config: self.config.as_ref().unwrap().clone(),
+            request_headers: vec![],
         }))
     }
 }
@@ -56,20 +57,22 @@ struct Resp {
 
 struct OutboundReplayFilter {
     config: Config,
+    request_headers: Vec<(String, String)>,
 }
 
 impl OutboundReplayFilter {
     fn call_replay(&mut self, body: Option<&[u8]>) {
         let host = &*self.config.host;
         let (_, authority) = self
-            .get_http_request_headers()
+            .request_headers
+            .clone()
             .iter()
             .find(|(k, _)| k == ":authority")
             .cloned()
             .expect("no authority");
         if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
             let trace_id = String::from_utf8(bytes).unwrap();
-            let mut headers = self.get_http_request_headers();
+            let mut headers = self.request_headers.clone();
             headers.push((R_MATCH_TYPE.to_string(), R_MATCH_OUTBOUND.to_string()));
             headers.push((R_INBOUND_TRACE_ID.to_string(), trace_id));
             headers.push((R_AUTHORITY.to_string(), authority));
@@ -132,6 +135,7 @@ impl Context for OutboundReplayFilter {
 
 impl HttpContext for OutboundReplayFilter {
     fn on_http_request_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
+        self.request_headers = self.get_http_request_headers();
         if end_of_stream {
             self.call_replay(None);
             return Action::Pause;
