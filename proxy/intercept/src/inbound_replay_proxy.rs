@@ -62,13 +62,18 @@ struct InboundReplayFilter {
 }
 
 impl InboundReplayFilter {
-    fn call_collector(&mut self, body: Option<&[u8]>) {
+    fn call_collector(&mut self, body: Bytes) {
         let host = &*self.config.host;
         let mut headers = self.req.request_headers.as_ref().unwrap().clone();
         headers.push((R_MATCH_TYPE.to_string(), R_MATCH_INBOUND.to_string()));
+        let mut dispatch_body: Option<&[u8]> = None;
+        if body.len() != 0 {
+            dispatch_body = Some(&body);
+        }
         info!(
-            "[inbound_replay] call: {}",
-            serde_json::to_string(&headers).unwrap()
+            "[inbound_replay] call: {}, body size: {}",
+            serde_json::to_string(&headers).unwrap(),
+            body.len()
         );
         self.dispatch_http_call(
             host,
@@ -76,7 +81,7 @@ impl InboundReplayFilter {
                 .iter()
                 .map(|(k, v)| (k.as_ref(), v.as_ref()))
                 .collect(),
-            body,
+            dispatch_body,
             vec![],
             Duration::from_secs(2),
         )
