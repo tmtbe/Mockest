@@ -168,8 +168,9 @@ impl HttpContext for OutboundReplayFilter {
         if end_of_stream {
             if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
                 self.call_replay(body_bytes);
+            } else {
+                self.call_replay(vec![]);
             }
-            self.call_replay(vec![]);
         }
         Action::Pause
     }
