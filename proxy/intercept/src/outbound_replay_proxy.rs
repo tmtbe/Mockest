@@ -117,13 +117,13 @@ impl Context for OutboundReplayFilter {
         body_size: usize,
         _num_trailers: usize,
     ) {
-        if let Some(body_bytes) = self.get_http_call_response_body(0, body_size) {
-            let raw_headers = self.get_http_call_response_headers();
-            let headers: Vec<(&str, &str)> = raw_headers
-                .iter()
-                .map(|(k, v)| (k.as_ref(), v.as_ref()))
-                .collect();
-            if let Some((_, code)) = raw_headers.iter().find(|(k, _)| (return k == ":status")) {
+        let raw_headers = self.get_http_call_response_headers();
+        let headers: Vec<(&str, &str)> = raw_headers
+            .iter()
+            .map(|(k, v)| (k.as_ref(), v.as_ref()))
+            .collect();
+        if let Some((_, code)) = raw_headers.iter().find(|(k, _)| (return k == ":status")) {
+            if let Some(body_bytes) = self.get_http_call_response_body(0, body_size) {
                 let resp = Resp {
                     response_headers: self.get_http_call_response_headers(),
                     response_body: base64::encode(body_bytes.clone()),
@@ -136,8 +136,21 @@ impl Context for OutboundReplayFilter {
                     Some(&body_bytes),
                 )
             } else {
-                error!("not found status code")
+                let resp = Resp {
+                    response_headers: self.get_http_call_response_headers(),
+                    response_body: "".to_string(),
+                };
+                let resp_json = serde_json::to_string(&resp).expect("json error");
+                self.set_property(vec!["replay"], Some(resp_json.as_ref()));
+                self.send_http_response(code.parse::<u32>().unwrap(), headers.clone(), None)
             }
+        } else {
+            error!("not found status code");
+            self.send_http_response(
+                500,
+                headers.clone(),
+                Some("[proxy] not found status code".as_bytes()),
+            )
         }
     }
 }
