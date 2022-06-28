@@ -123,7 +123,7 @@ impl HttpContext for InboundReplayFilter {
     fn on_http_request_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
         self.req.request_headers = Some(self.get_http_request_headers());
         if end_of_stream {
-            self.call_collector(None);
+            self.call_collector(vec![]);
             return Action::Pause;
         }
         Action::Continue
@@ -133,9 +133,9 @@ impl HttpContext for InboundReplayFilter {
             if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
                 let body = base64::encode(&body_bytes);
                 self.req.request_body = Some(body);
-                self.call_collector(Some(&body_bytes));
+                self.call_collector(body_bytes);
             } else {
-                self.call_collector(None);
+                self.call_collector(vec![]);
             }
         }
         Action::Pause

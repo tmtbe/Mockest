@@ -1,12 +1,16 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -16,11 +20,17 @@ type Stubby struct {
 	Includes    []string      `json:"includes" yaml:"includes"`
 }
 
-func (s Stubby) Write(path string) {
+func (s Stubby) Write(path string) map[string][]string {
 	mainBytes, _ := yaml.Marshal(s)
 	_ = os.MkdirAll(path, 0766)
 	_ = ioutil.WriteFile(filepath.Join(path, "main.yaml"), mainBytes, 0766)
+	var md5Map = make(map[string][]string)
 	for _, stubbyFile := range s.StubbyFiles {
+		stubbyFileMD5 := stubbyFile.md5()
+		if _, ok := md5Map[stubbyFileMD5]; !ok {
+			md5Map[stubbyFileMD5] = make([]string, 0)
+		}
+		md5Map[stubbyFileMD5] = append(md5Map[stubbyFileMD5], stubbyFile.getRequestTraceID())
 		stubbyModBytes, _ := yaml.Marshal(stubbyFile.StubbyMod)
 		_ = ioutil.WriteFile(filepath.Join(path, stubbyFile.Name+".yaml"), stubbyModBytes, 0766)
 		for name, value := range stubbyFile.Files {
@@ -31,6 +41,7 @@ func (s Stubby) Write(path string) {
 			_ = ioutil.WriteFile(filename, decodeBytes, 0766)
 		}
 	}
+	return md5Map
 }
 
 type StubbyFile struct {
@@ -39,10 +50,54 @@ type StubbyFile struct {
 	Files     map[string]string `json:"files" yaml:"files"`
 }
 
+func (s *StubbyFile) getRequestTraceID() string {
+	inbound := s.StubbyMod[0]
+	return inbound.Response.Headers["r_inbound_trace_id"]
+}
+func (s *StubbyFile) md5() string {
+	inbound := s.StubbyMod[0]
+	w := md5.New()
+	io.WriteString(w, inbound.Request.Method)
+	io.WriteString(w, " ")
+	io.WriteString(w, inbound.Request.URL)
+	io.WriteString(w, "?")
+	var queryKeys []string
+	for k, _ := range inbound.Request.Query {
+		queryKeys = append(queryKeys, k)
+	}
+	sort.Strings(queryKeys)
+	for _, key := range queryKeys {
+		io.WriteString(w, key)
+		io.WriteString(w, "=")
+		io.WriteString(w, inbound.Request.Query[key])
+		io.WriteString(w, "&")
+	}
+	io.WriteString(w, " ")
+	var headerKeys []string
+	for k, _ := range inbound.Request.Headers {
+		headerKeys = append(headerKeys, k)
+	}
+	sort.Strings(headerKeys)
+	for _, key := range headerKeys {
+		io.WriteString(w, "-H ")
+		io.WriteString(w, key)
+		io.WriteString(w, "=")
+		io.WriteString(w, inbound.Request.Headers[key])
+	}
+	io.WriteString(w, " ")
+	if inbound.Request.File != nil {
+		if v, ok := s.Files[*inbound.Request.File]; ok {
+			io.WriteString(w, v)
+		}
+	}
+	return hex.EncodeToString(w.Sum(nil))
+}
+
 type StubbyMod struct {
 	Request  Request  `json:"request" yaml:"request"`
 	Response Response `json:"response" yaml:"response"`
 }
+
 type Request struct {
 	URL     string            `json:"url" yaml:"url"`
 	Query   map[string]string `json:"query,omitempty" yaml:"query,omitempty"`
