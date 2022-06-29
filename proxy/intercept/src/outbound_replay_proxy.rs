@@ -43,6 +43,7 @@ impl RootContext for OutboundReplayProxy {
         Some(Box::new(OutboundReplayFilter {
             config: self.config.as_ref().unwrap().clone(),
             request_headers: vec![],
+            request_body: vec![],
         }))
     }
 }
@@ -58,10 +59,11 @@ struct Resp {
 struct OutboundReplayFilter {
     config: Config,
     request_headers: Vec<(String, String)>,
+    request_body: Bytes,
 }
 
 impl OutboundReplayFilter {
-    fn call_replay(&mut self, body: Bytes) {
+    fn call_replay(&mut self) {
         let host = &*self.config.host;
         let (_, authority) = self
             .request_headers
@@ -71,19 +73,34 @@ impl OutboundReplayFilter {
             .cloned()
             .expect("no authority");
         let mut dispatch_body: Option<&[u8]> = None;
-        if body.len() != 0 {
-            dispatch_body = Some(&body);
+        if self.request_body.len() != 0 {
+            dispatch_body = Some(&self.request_body);
         }
         if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
             let trace_id = String::from_utf8(bytes).unwrap();
-            let mut headers = self.request_headers.clone();
+            let mut headers: Vec<(String, String)> = vec![];
+            for x in self.request_headers.clone() {
+                if x.0.starts_with("-x") {
+                    continue;
+                }
+                if x.0 == "content-length" {
+                    continue;
+                }
+                if x.0 == ":scheme" {
+                    headers.push((":scheme".to_string(), "http".to_string()));
+                } else if x.0 == ":authority" {
+                    headers.push((":authority".to_string(), host.to_string()));
+                } else {
+                    headers.push(x);
+                }
+            }
             headers.push((R_MATCH_TYPE.to_string(), R_MATCH_OUTBOUND.to_string()));
             headers.push((R_INBOUND_TRACE_ID.to_string(), trace_id));
             headers.push((R_AUTHORITY.to_string(), authority));
             info!(
                 "[outbound_replay] call: {}, body size: {}",
                 serde_json::to_string(&headers).unwrap(),
-                body.len()
+                self.request_body.len()
             );
             self.dispatch_http_call(
                 host,
@@ -93,7 +110,7 @@ impl OutboundReplayFilter {
                     .collect(),
                 dispatch_body,
                 vec![],
-                Duration::from_secs(2),
+                Duration::from_secs(5),
             )
             .expect("dispatch http call error");
         } else {
@@ -117,6 +134,7 @@ impl Context for OutboundReplayFilter {
         body_size: usize,
         _num_trailers: usize,
     ) {
+        info!("get call response");
         let raw_headers = self.get_http_call_response_headers();
         let headers: Vec<(&str, &str)> = raw_headers
             .iter()
@@ -133,7 +151,7 @@ impl Context for OutboundReplayFilter {
                 self.send_http_response(
                     code.parse::<u32>().unwrap(),
                     headers.clone(),
-                    Some(&body_bytes),
+                    Some(&body_bytes.clone()),
                 )
             } else {
                 let resp = Resp {
@@ -142,7 +160,7 @@ impl Context for OutboundReplayFilter {
                 };
                 let resp_json = serde_json::to_string(&resp).expect("json error");
                 self.set_property(vec!["replay"], Some(resp_json.as_ref()));
-                self.send_http_response(code.parse::<u32>().unwrap(), headers.clone(), None)
+                self.send_http_response(code.parse::<u32>().unwrap(), headers.clone(), None);
             }
         } else {
             error!("not found status code");
@@ -158,20 +176,16 @@ impl Context for OutboundReplayFilter {
 impl HttpContext for OutboundReplayFilter {
     fn on_http_request_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
         self.request_headers = self.get_http_request_headers();
-        if end_of_stream {
-            self.call_replay(vec![]);
-            return Action::Pause;
-        }
         Action::Continue
     }
     fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
-        if end_of_stream {
-            if let Some(body_bytes) = self.get_http_request_body(0, body_size) {
-                self.call_replay(body_bytes);
-            } else {
-                self.call_replay(vec![]);
-            }
+        if let Some(mut body_bytes) = self.get_http_request_body(0, body_size) {
+            self.request_body.append(body_bytes.as_mut());
         }
+        Action::Continue
+    }
+    fn on_http_response_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
+        self.call_replay();
         Action::Pause
     }
 }
