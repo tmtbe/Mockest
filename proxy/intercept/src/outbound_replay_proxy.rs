@@ -80,10 +80,10 @@ impl OutboundReplayFilter {
             let trace_id = String::from_utf8(bytes).unwrap();
             let mut headers: Vec<(String, String)> = vec![];
             for x in self.request_headers.clone() {
-                if x.0.starts_with("-x") {
+                if x.0.to_lowercase().starts_with("x-") {
                     continue;
                 }
-                if x.0 == "content-length" {
+                if x.0.to_lowercase() == "content-length" {
                     continue;
                 }
                 if x.0 == ":scheme" {

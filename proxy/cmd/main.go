@@ -79,8 +79,8 @@ func setIptablesWithRoot() {
 }
 func runEnvoy(replay bool) {
 	if !replay {
-		runCmd("./envoy", "-c", "envoy-record.yaml")
+		runCmd("./envoy", "-c", "envoy-record.yaml", "--concurrency", "1")
 	} else {
-		runCmd("./envoy", "-c", "envoy-replay.yaml")
+		runCmd("./envoy", "-c", "envoy-replay.yaml", "--concurrency", "1")
 	}
 }
