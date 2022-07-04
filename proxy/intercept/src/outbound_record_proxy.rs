@@ -44,9 +44,7 @@ impl RootContext for OutboundRecordProxy {
     }
 
     fn create_http_context(&self, context_id: u32) -> Option<Box<dyn HttpContext>> {
-        let mut trace_id: String = SonyFlakeEntity::new_default()
-            .get_id(self.get_current_time())
-            .to_string();
+        let mut trace_id: String = "untracked".to_string();
         if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
             trace_id = String::from_utf8(bytes).unwrap();
         }

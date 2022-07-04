@@ -123,7 +123,9 @@ func Gen() Stubby {
 			StubbyMod: make([]*StubbyMod, 0),
 			Files:     make(map[string]string),
 		}
-		stubbyFile.StubbyMod = append(stubbyFile.StubbyMod, stubbyFile.genStubby(inbound))
+		if inbound != nil {
+			stubbyFile.StubbyMod = append(stubbyFile.StubbyMod, stubbyFile.genStubby(inbound))
+		}
 		for _, outbound := range outbounds {
 			stubbyFile.StubbyMod = append(stubbyFile.StubbyMod, stubbyFile.genStubby(outbound))
 		}
@@ -134,6 +136,9 @@ func Gen() Stubby {
 }
 
 func genName(record *Record) string {
+	if record == nil {
+		return "UNTRACKED"
+	}
 	names := make([]string, 0)
 	names = append(names, record.RequestHeaders.GetHeader(":authority"))
 	names = append(names, record.RequestHeaders.GetHeader(":method"))

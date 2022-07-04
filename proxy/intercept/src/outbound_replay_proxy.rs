@@ -76,53 +76,46 @@ impl OutboundReplayFilter {
         if self.request_body.len() != 0 {
             dispatch_body = Some(&self.request_body);
         }
+        let mut headers: Vec<(String, String)> = vec![];
+        for x in self.request_headers.clone() {
+            if x.0.to_lowercase().starts_with("x-") {
+                continue;
+            }
+            if x.0.to_lowercase() == "content-length" {
+                continue;
+            }
+            if x.0 == ":scheme" {
+                headers.push((":scheme".to_string(), "http".to_string()));
+            } else if x.0 == ":authority" {
+                headers.push((":authority".to_string(), host.to_string()));
+            } else {
+                headers.push(x);
+            }
+        }
         if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
             let trace_id = String::from_utf8(bytes).unwrap();
-            let mut headers: Vec<(String, String)> = vec![];
-            for x in self.request_headers.clone() {
-                if x.0.to_lowercase().starts_with("x-") {
-                    continue;
-                }
-                if x.0.to_lowercase() == "content-length" {
-                    continue;
-                }
-                if x.0 == ":scheme" {
-                    headers.push((":scheme".to_string(), "http".to_string()));
-                } else if x.0 == ":authority" {
-                    headers.push((":authority".to_string(), host.to_string()));
-                } else {
-                    headers.push(x);
-                }
-            }
-            headers.push((R_MATCH_TYPE.to_string(), R_MATCH_OUTBOUND.to_string()));
             headers.push((R_INBOUND_TRACE_ID.to_string(), trace_id));
-            headers.push((R_AUTHORITY.to_string(), authority));
-            info!(
-                "[outbound_replay] call: {}, body size: {}",
-                serde_json::to_string(&headers).unwrap(),
-                self.request_body.len()
-            );
-            self.dispatch_http_call(
-                host,
-                headers
-                    .iter()
-                    .map(|(k, v)| (k.as_ref(), v.as_ref()))
-                    .collect(),
-                dispatch_body,
-                vec![],
-                Duration::from_secs(5),
-            )
-            .expect("dispatch http call error");
         } else {
-            self.send_http_response(
-                500,
-                vec![],
-                Some(
-                    "[sidecar] outbound proxy not bind any trace id, you need inbound first"
-                        .as_ref(),
-                ),
-            )
+            warn!("[proxy] outbound proxy not bind any trace id, you need inbound first")
         }
+        headers.push((R_MATCH_TYPE.to_string(), R_MATCH_OUTBOUND.to_string()));
+        headers.push((R_AUTHORITY.to_string(), authority));
+        info!(
+            "[outbound_replay] call: {}, body size: {}",
+            serde_json::to_string(&headers).unwrap(),
+            self.request_body.len()
+        );
+        self.dispatch_http_call(
+            host,
+            headers
+                .iter()
+                .map(|(k, v)| (k.as_ref(), v.as_ref()))
+                .collect(),
+            dispatch_body,
+            vec![],
+            Duration::from_secs(5),
+        )
+        .expect("dispatch http call error");
     }
 }
 

@@ -56,7 +56,11 @@ type Records []*Record
 var recordMap = make(map[string]Records)
 
 func addRecord(record *Record) {
-	if _, ok := recordMap[record.TraceID]; !ok {
+	traceId := record.TraceID
+	if traceId == "" {
+		traceId = "untracked"
+	}
+	if _, ok := recordMap[traceId]; !ok {
 		recordMap[record.TraceID] = make([]*Record, 0)
 	}
 	recordMap[record.TraceID] = append(recordMap[record.TraceID], record)
