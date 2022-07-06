@@ -217,7 +217,7 @@ static_resources:
                         match:
                           prefix: "/"
                         route:
-                          cluster: replay
+                          cluster: collector
                 http_filters:
                   - name: envoy.filters.http.wasm
                     typed_config:

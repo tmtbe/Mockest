@@ -37,4 +37,4 @@ Mockest无侵入的对被测应用的入口和出口流量拦截录制，实现�
 * 采用ALPN方式请求
 * 增加端口匹配或者域名匹配等等
 
-Replay服务还会作为Https的流量黑洞，所有会出现大量404 Not Found不用担心。
+Collector服务还会作为Https的流量黑洞。
