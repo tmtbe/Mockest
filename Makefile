@@ -70,4 +70,6 @@ test.replay: build.docker test.sandbox.clean test.sandbox.replay
 	sleep 5
 	docker run --network mockest alpine/curl curl proxy/test1
 	docker run --network=container:proxy alpine/curl curl -k -X POST "https://httpbin.org/post" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'
+	docker run --network=container:proxy alpine/curl curl -k -X POST "http://httpbin.org/post" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'
 	docker run --network=container:proxy alpine/curl curl -k -X PUT "https://httpbin.org/put" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'
+	docker run --network=container:proxy alpine/curl curl -k -X PUT "http://httpbin.org/put" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'

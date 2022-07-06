@@ -276,7 +276,7 @@ static_resources:
                         match:
                           prefix: "/"
                         route:
-                          cluster: cluster-default-tls
+                          cluster: collector
                 http_filters:
                   - name: envoy.filters.http.wasm
                     typed_config:
@@ -325,7 +325,7 @@ static_resources:
                         match:
                           prefix: "/"
                         route:
-                          cluster: cluster-default
+                          cluster: collector
                 http_filters:
                   - name: envoy.filters.http.wasm
                     typed_config:
