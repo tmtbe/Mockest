@@ -63,11 +63,11 @@ test.sandbox.clean:
 	docker network rm mockest
 test.record: build.docker test.sandbox.clean test.sandbox.record
 	docker run --network mockest alpine/curl curl proxy/test1
-	docker run --network=container:proxy alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%B8%80&from=poem"
-	docker run --network=container:proxy alpine/curl curl -k "https://blog.csdn.net/qq_42293590/article/details/89640886"
+	docker run --network=container:proxy alpine/curl curl -k -X POST "https://httpbin.org/post" -H "content-type: application/json" -d '{"test1":"test1","test2":"test2"}'
+	docker run --network=container:proxy alpine/curl curl -k -X PUT "https://httpbin.org/put" -H "content-type: application/json" -d '{"test1":"test1","test2":"test2"}'
 	docker run --network mockest alpine/curl curl collector/gen
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
 	sleep 5
 	docker run --network mockest alpine/curl curl proxy/test1
-	docker run --network=container:proxy alpine/curl curl -k "https://hanyu.baidu.com/s?wd=%E4%B8%80&from=poem"
-	docker run --network=container:proxy alpine/curl curl -k "https://blog.csdn.net/qq_42293590/article/details/89640886"
+	docker run --network=container:proxy alpine/curl curl -k -X POST "https://httpbin.org/post" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'
+	docker run --network=container:proxy alpine/curl curl -k -X PUT "https://httpbin.org/put" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'

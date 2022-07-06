@@ -1,6 +1,6 @@
 .:53 {
     rewrite name regex (.*) mock.mock.mock
     hosts {
-       0.0.0.0 mock.mock.mock
+       127.0.0.1 mock.mock.mock
     }
 }

@@ -18,7 +18,7 @@ type Headers []Header
 func (h Headers) GetAllHeaders() map[string]string {
 	headerMap := make(map[string]string)
 	for _, header := range h {
-		headerMap[header[0]] = header[1]
+		headerMap[strings.ToLower(header[0])] = header[1]
 	}
 	return headerMap
 }
@@ -26,6 +26,9 @@ func (h Headers) GetRespHeaders() map[string]string {
 	headerMap := make(map[string]string)
 	for _, header := range h {
 		if strings.HasPrefix(header[0], ":") || strings.HasPrefix(header[0], "x-") {
+			continue
+		}
+		if header[0] == "user-agent" || header[0] == "content-length" {
 			continue
 		}
 		headerMap[header[0]] = header[1]
@@ -38,7 +41,7 @@ func (h Headers) GetReqHeaders() map[string]string {
 		if strings.HasPrefix(header[0], ":") || strings.HasPrefix(header[0], "x-") {
 			continue
 		}
-		if header[0] == "accept" || header[0] == "user-agent" {
+		if header[0] == "user-agent" || header[0] == "content-length" {
 			continue
 		}
 		headerMap[header[0]] = header[1]
@@ -47,7 +50,11 @@ func (h Headers) GetReqHeaders() map[string]string {
 }
 
 func (h *Headers) GetHeader(name string) string {
-	return h.GetAllHeaders()[name]
+	v, ok := h.GetAllHeaders()[name]
+	if !ok {
+		v = ""
+	}
+	return v
 }
 
 type Header []string

@@ -5,7 +5,6 @@ use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, Bytes, Status};
 use serde::{Deserialize, Serialize};
 
-use crate::sony_flake::SonyFlakeEntity;
 use crate::SHARED_TRACE_ID_NAME;
 
 #[derive(Serialize, Deserialize)]
