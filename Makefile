@@ -6,6 +6,11 @@ build:
 	cd demo && docker buildx build --platform linux/arm64,linux/amd64 -t mockest/demo .
 	cd proxy && docker buildx build --platform linux/arm64,linux/amd64 -t mockest/proxy .
 
+build.easy:
+	cd collector && docker build -t mockest/collector .
+	cd demo && docker build -t mockest/demo .
+	cd proxy && docker build -t mockest/proxy .
+
 deploy.docker: build
 	docker tag mockest/collector tmtbe/mockest-collector
 	docker tag mockest/proxy tmtbe/mockest-proxy
