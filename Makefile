@@ -2,9 +2,9 @@ init:
 	docker buildx create --name mybuilder --driver docker-container
 	docker buildx use mybuilder
 build:
-	cd collector && docker buildx build --platform linux/arm,linux/arm64,linux/amd64 -t mockest/collector .
-	cd demo && docker buildx build --platform linux/arm,linux/arm64,linux/amd64 -t mockest/demo .
-	cd proxy && docker buildx build --platform linux/arm,linux/arm64,linux/amd64 -t mockest/proxy .
+	cd collector && docker buildx build --platform linux/arm64,linux/amd64 -t mockest/collector .
+	cd demo && docker buildx build --platform linux/arm64,linux/amd64 -t mockest/demo .
+	cd proxy && docker buildx build --platform linux/arm64,linux/amd64 -t mockest/proxy .
 
 deploy.docker: build
 	docker tag mockest/collector tmtbe/mockest-collector
