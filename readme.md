@@ -16,8 +16,10 @@ Mockest无侵入的对被测应用的入口和出口流量拦截录制，实现�
 
 ## 如何使用
 ## 镜像
-* tmtbe/mockest-proxy:latest
-* tmtbe/mockest-k8s-inject:latest
+镜像会自动构建，最新的镜像为：
+* tmtbe/mockest-proxy:master
+* tmtbe/mockest-collector:master
+* tmtbe/mockest-demo:master
 ### 安装
 ```shell
 make build.docker
