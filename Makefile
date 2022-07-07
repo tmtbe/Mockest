@@ -11,7 +11,7 @@ build.easy:
 	cd demo && docker build -t mockest/demo .
 	cd proxy && docker build -t mockest/proxy .
 
-deploy.docker: build
+deploy:
 	docker tag mockest/collector tmtbe/mockest-collector
 	docker tag mockest/proxy tmtbe/mockest-proxy
 	docker tag mockest/k8s-inject tmtbe/mockest-k8s-inject
