@@ -1,5 +1,5 @@
-build.docker: build.proxy.docker build.collector.docker
-clean:  clean.collector clean.proxy  clean.proxy.intercept clean.proxy.cmd clean.k8s.inejct
+build.docker: build.proxy.docker build.collector.docker build.demo.docker
+clean:  clean.collector clean.demo clean.proxy  clean.proxy.intercept clean.proxy.cmd clean.k8s.inejct
 
 build.proxy.docker:clean.proxy build.proxy.intercept build.proxy.cmd
 	cd proxy && cp -r docker target
@@ -34,6 +34,14 @@ build.k8s.inject.docker:clean.k8s.inejct
 clean.k8s.inejct:
 	rm -rf k8s/inject/target
 
+build.demo:
+	cd demo && go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ./target/demo
+build.demo.docker:clean.demo
+	cd demo && cp -r docker target && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ./target/demo
+	cd ./demo/target && docker build -t mockest/demo .
+clean.demo:
+	rm -rf ./demo/target
+
 deploy.docker: build.docker
 	docker tag mockest/collector tmtbe/mockest-collector
 	docker tag mockest/proxy tmtbe/mockest-proxy
@@ -46,30 +54,25 @@ test.sandbox.record:
 	docker network create mockest
 	docker run -d --network mockest --name collector -v ${PWD}/replay:/home  mockest/collector
 	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --name proxy mockest/proxy all
-	docker run -d --network=container:proxy --name nginx nginx
+	docker run -d --network=container:proxy --name demo mockest/demo
+	docker run -d --network mockest --name outbound-demo mockest/demo
 test.sandbox.replay:
 	docker network create mockest
 	docker run -d --network mockest --name collector  mockest/collector
 	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name proxy mockest/proxy all --replay
 	docker run -d --network container:proxy --name coredns -v ${PWD}/coredns:/etc/coredns/ coredns/coredns -conf /etc/coredns/Corefile
-	docker run -d --network=container:proxy --name nginx nginx
+	docker run -d --network=container:proxy --name demo mockest/demo
 	docker run -d -v ${PWD}/replay:/home/stubby4j/data --name replay --network mockest -e STUBS_PORT=80 azagniotov/stubby4j:latest-jre11
 test.sandbox.clean:
 	docker rm -f collector
 	docker rm -f proxy
-	docker rm -f nginx
+	docker rm -f demo
 	docker rm -f coredns
 	docker rm -f replay
 	docker network rm mockest
 test.record: build.docker test.sandbox.clean test.sandbox.record
-	docker run --network mockest alpine/curl curl proxy/test1
-	docker run --network=container:proxy alpine/curl curl -k -X POST "https://httpbin.org/post" -H "content-type: application/json" -d '{"test1":"test1","test2":"test2"}'
-	docker run --network=container:proxy alpine/curl curl -k -X PUT "https://httpbin.org/put" -H "content-type: application/json" -d '{"test1":"test1","test2":"test2"}'
+	docker run --network mockest alpine/curl curl proxy/inbound
 	docker run --network mockest alpine/curl curl collector/gen
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
 	sleep 5
-	docker run --network mockest alpine/curl curl proxy/test1
-	docker run --network=container:proxy alpine/curl curl -k -X POST "https://httpbin.org/post" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'
-	docker run --network=container:proxy alpine/curl curl -k -X POST "http://httpbin.org/post" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'
-	docker run --network=container:proxy alpine/curl curl -k -X PUT "https://httpbin.org/put" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'
-	docker run --network=container:proxy alpine/curl curl -k -X PUT "http://httpbin.org/put" -H "content-type: application/json" -d '{"test2":"test2","test1":"test1"}'
+	docker run --network mockest alpine/curl curl proxy/inbound
