@@ -1,3 +1,5 @@
+init:
+	rustup target add wasm32-unknown-unknown
 build.docker: build.proxy.docker build.collector.docker build.demo.docker
 clean:  clean.collector clean.demo clean.proxy  clean.proxy.intercept clean.proxy.cmd clean.k8s.inejct
 
