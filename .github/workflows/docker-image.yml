@@ -37,11 +37,37 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/tmtbe/mockest-proxy
       - name: Proxy Build and push Docker image
-        id: build-and-push
+        id: proxy-build-and-push
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
         with:
           context: ./proxy
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.proxy-meta.outputs.tags }}
           labels: ${{ steps.proxy-meta.outputs.labels }}
+      - name: Collector Extract Docker metadata
+        id: collector-meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/tmtbe/mockest-collector
+      - name: Collector Build and push Docker image
+        id: collector-build-and-push
+        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+        with:
+          context: ./collector
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.collector-meta.outputs.tags }}
+          labels: ${{ steps.collector-meta.outputs.labels }}
+      - name: Demo Extract Docker metadata
+        id: demo-meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/tmtbe/mockest-demo
+      - name: Demo Build and push Docker image
+        id: demo-build-and-push
+        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+        with:
+          context: ./demo
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.demo-meta.outputs.tags }}
+          labels: ${{ steps.demo-meta.outputs.labels }}
 
