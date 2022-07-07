@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "master" ]
 
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: docker.io
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,7 +31,17 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build the Docker image
-        run: make build
-      - name: Push to DockerHub
-        run: make deploy
+      - name: [Proxy] Extract Docker metadata
+        id: proxy-meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/tmtbe/mockest-proxy
+      - name: [Proxy] Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+        with:
+          context: ./proxy
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.proxy-meta.outputs.tags }}
+          labels: ${{ steps.proxy-meta.outputs.labels }}
+
