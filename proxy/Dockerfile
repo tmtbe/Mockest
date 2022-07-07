@@ -1,3 +1,4 @@
+FROM --platform=$TARGETPLATFORM envoyproxy/envoy:v1.21.2 as builder-envoy
 FROM --platform=$TARGETPLATFORM rust:1.61.0 as builder-rust
 WORKDIR /app
 COPY ./intercept .
@@ -32,7 +33,7 @@ RUN useradd -m --uid 1987 sidecar && \
 
 COPY --from=builder-rust app/target/wasm32-unknown-unknown/release/intercept.wasm /home
 COPY --from=builder-golang app/proxy /home
-COPY --from=envoyproxy/envoy:v1.21.2  usr/local/bin/envoy /home
+COPY --from=builder-envoy  usr/local/bin/envoy /home
 COPY resource /home
 USER sidecar
 WORKDIR /home
