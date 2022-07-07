@@ -11,6 +11,7 @@ type Record struct {
 	RequestBody     string  `json:"request_body"`
 	ResponseHeaders Headers `json:"response_headers"`
 	ResponseBody    string  `json:"response_body"`
+	Index           int     `json:"index"`
 }
 
 type Headers []Header

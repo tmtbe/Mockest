@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use log::{debug, error, info};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
-use proxy_wasm::types::Action;
+use proxy_wasm::types::{Action, Bytes};
 use serde::{Deserialize, Serialize};
 
 use crate::sony_flake::SonyFlakeEntity;
@@ -57,5 +57,9 @@ impl HttpContext for InboundNewTraceFilter {
             self.new_trace();
         }
         Action::Continue
+    }
+    fn on_log(&mut self) {
+        self.set_shared_data(SHARED_TRACE_ID_NAME, None, None)
+            .expect("clean trace id failed");
     }
 }

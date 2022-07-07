@@ -3,9 +3,11 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
+	"strconv"
 )
 
 func main() {
+	index := 0
 	r := gin.Default()
 	client := resty.New()
 	r.GET("/inbound", func(c *gin.Context) {
@@ -29,12 +31,22 @@ func main() {
 			})
 			return
 		}
-		_, err = client.R().SetHeader("demo", "get").Get("http://outbound-demo/outbound_GET")
-		if err != nil {
-			c.JSON(400, gin.H{
-				"status": "outbound_GET ERROR",
-			})
-			return
+		for i := 0; i < 3; i++ {
+			resp, err := client.R().SetHeader("demo", "get").Get("http://outbound-demo/outbound_GET")
+			respIndex := resp.Header().Get("index")
+			if respIndex != strconv.Itoa(i) {
+				println("need:" + strconv.Itoa(i) + "get:" + respIndex)
+				c.JSON(400, gin.H{
+					"status": "outbound_GET ERROR",
+				})
+				return
+			}
+			if err != nil {
+				c.JSON(400, gin.H{
+					"status": "outbound_GET ERROR",
+				})
+				return
+			}
 		}
 		c.JSON(200, gin.H{
 			"status": "inbound OK",
@@ -51,9 +63,11 @@ func main() {
 		})
 	})
 	r.GET("/outbound_GET", func(c *gin.Context) {
+		c.Header("index", strconv.Itoa(index))
 		c.JSON(200, gin.H{
 			"status": "outbound_GET OK",
 		})
+		index++
 	})
 	r.Run(":80")
 }

@@ -5,7 +5,7 @@ use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, Bytes, Status};
 use serde::{Deserialize, Serialize};
 
-use crate::SHARED_TRACE_ID_NAME;
+use crate::{add_sign_to_record, Sign, SHARED_TRACE_ID_NAME};
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -57,6 +57,7 @@ impl RootContext for OutboundRecordProxy {
                 request_body: None,
                 response_headers: None,
                 response_body: None,
+                index: 0,
             },
             context_id,
             request_body: vec![],
@@ -75,6 +76,7 @@ struct Record {
     request_body: Option<String>,
     response_headers: Option<Vec<(String, String)>>,
     response_body: Option<String>,
+    index: usize,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -142,6 +144,11 @@ impl HttpContext for OutboundRecordFilter {
             self.record.response_body = Some(resp.response_body);
             self.record.response_headers = Some(resp.response_headers);
         }
+        let sign = Sign {
+            request_headers: self.get_http_request_headers(),
+            request_body: self.record.request_body.as_ref().map(String::to_string),
+        };
+        self.record.index = add_sign_to_record(sign);
         info!("outbound record");
         self.call_collector()
     }

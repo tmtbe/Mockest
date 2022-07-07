@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use crate::{
-    R_AUTHORITY, R_INBOUND_TRACE_ID, R_MATCH_OUTBOUND, R_MATCH_TYPE, SHARED_TRACE_ID_NAME,
+    add_sign_to_replay, Sign, R_AUTHORITY, R_INBOUND_TRACE_ID, R_INDEX, R_MATCH_OUTBOUND,
+    R_MATCH_TYPE, SHARED_TRACE_ID_NAME,
 };
 use log::{error, info, warn};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
@@ -63,7 +64,7 @@ struct OutboundReplayFilter {
 }
 
 impl OutboundReplayFilter {
-    fn call_replay(&mut self) {
+    fn call_replay(&mut self, index: usize) {
         let host = &*self.config.host;
         let (_, authority) = self
             .request_headers
@@ -100,6 +101,7 @@ impl OutboundReplayFilter {
         }
         headers.push((R_MATCH_TYPE.to_string(), R_MATCH_OUTBOUND.to_string()));
         headers.push((R_AUTHORITY.to_string(), authority));
+        headers.push((R_INDEX.to_string(), index.to_string()));
         info!(
             "[outbound_replay] call: {}, body size: {}",
             serde_json::to_string(&headers).unwrap(),
@@ -167,18 +169,26 @@ impl Context for OutboundReplayFilter {
 }
 
 impl HttpContext for OutboundReplayFilter {
-    fn on_http_request_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
+    fn on_http_request_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
         self.request_headers = self.get_http_request_headers();
         Action::Continue
     }
-    fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
+    fn on_http_request_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
         if let Some(mut body_bytes) = self.get_http_request_body(0, body_size) {
             self.request_body.append(body_bytes.as_mut());
         }
         Action::Continue
     }
     fn on_http_response_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
-        self.call_replay();
+        let mut request_body = None;
+        if self.request_body.len() > 0 {
+            request_body = Some(base64::encode(&self.request_body))
+        }
+        let sign = Sign {
+            request_headers: self.request_headers.clone(),
+            request_body,
+        };
+        self.call_replay(add_sign_to_replay(sign));
         Action::Pause
     }
 }

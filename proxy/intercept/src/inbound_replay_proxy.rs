@@ -1,7 +1,10 @@
 use std::time::Duration;
 
-use crate::{R_AUTHORITY, R_INBOUND_TRACE_ID, R_MATCH_INBOUND, R_MATCH_TYPE, SHARED_TRACE_ID_NAME};
-use log::info;
+use crate::{
+    clean_replay_sign, R_AUTHORITY, R_INBOUND_TRACE_ID, R_MATCH_INBOUND, R_MATCH_TYPE,
+    SHARED_TRACE_ID_NAME,
+};
+use log::{error, info};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, Bytes};
 use serde::{Deserialize, Serialize};
@@ -113,8 +116,9 @@ impl Context for InboundReplayFilter {
             self.send_http_response(
                 500,
                 vec![],
-                Some("[sidecar] inbound proxy get trace id error".as_ref()),
-            )
+                Some("[proxy] inbound proxy get trace id error".as_ref()),
+            );
+            error!("inbound proxy get trace id error")
         }
     }
 }
@@ -139,5 +143,8 @@ impl HttpContext for InboundReplayFilter {
             }
         }
         Action::Pause
+    }
+    fn on_log(&mut self) {
+        clean_replay_sign()
     }
 }

@@ -5,7 +5,7 @@ use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, Bytes};
 use serde::{Deserialize, Serialize};
 
-use crate::SHARED_TRACE_ID_NAME;
+use crate::{clean_record_sign, SHARED_TRACE_ID_NAME};
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -54,6 +54,7 @@ impl RootContext for InboundRecordProxy {
             context_id,
             request_body: vec![],
             response_body: vec![],
+            trace_id: None,
         }))
     }
 }
@@ -76,6 +77,7 @@ struct InboundRecordFilter {
     context_id: u32,
     request_body: Bytes,
     response_body: Bytes,
+    trace_id: Option<String>,
 }
 impl InboundRecordFilter {
     fn call_collector(&self) {
@@ -95,6 +97,12 @@ impl InboundRecordFilter {
 impl Context for InboundRecordFilter {}
 
 impl HttpContext for InboundRecordFilter {
+    fn on_http_request_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
+        if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
+            self.trace_id = Some(String::from_utf8(bytes).unwrap());
+        }
+        Action::Continue
+    }
     fn on_http_request_body(&mut self, body_size: usize, _end_of_stream: bool) -> Action {
         if let Some(mut body_bytes) = self.get_http_request_body(0, body_size) {
             self.request_body.append(body_bytes.as_mut());
@@ -108,14 +116,11 @@ impl HttpContext for InboundRecordFilter {
         }
         Action::Continue
     }
+
     fn on_log(&mut self) {
-        let mut trace_id = None;
-        if let (Some(bytes), _cas) = self.get_shared_data(SHARED_TRACE_ID_NAME) {
-            trace_id = Some(String::from_utf8(bytes).unwrap());
-        }
         self.record.request_headers = Some(self.get_http_request_headers());
         self.record.response_headers = Some(self.get_http_response_headers());
-        self.record.trace_id = trace_id;
+        self.record.trace_id = self.trace_id.as_ref().map(String::to_string);
         self.record.plugin_type = Some((&*self.config.plugin_type).to_string());
         if self.response_body.len() > 0 {
             self.record.response_body = Some(base64::encode(&self.response_body))
@@ -123,6 +128,7 @@ impl HttpContext for InboundRecordFilter {
         if self.request_body.len() > 0 {
             self.record.request_body = Some(base64::encode(&self.request_body))
         }
-        self.call_collector()
+        self.call_collector();
+        clean_record_sign();
     }
 }

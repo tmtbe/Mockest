@@ -181,6 +181,9 @@ func (s *StubbyFile) genStubby(record *Record) *StubbyMod {
 		outboundRequestHeaders["r_match_type"] = "r_match_outbound"
 		outboundRequestHeaders["r_inbound_trace_id"] = record.TraceID
 		outboundRequestHeaders["r_authority"] = record.RequestHeaders.GetHeader(":authority")
+		if record.TraceID != "untracked" {
+			outboundRequestHeaders["r_index"] = strconv.Itoa(record.Index)
+		}
 		return &StubbyMod{
 			Request: Request{
 				URL:     pathSplit[0],
@@ -190,7 +193,7 @@ func (s *StubbyFile) genStubby(record *Record) *StubbyMod {
 				File:    s.genBodyFile(record.RequestBody, "request", record),
 			},
 			Response: Response{
-				Headers: record.RequestHeaders.GetRespHeaders(),
+				Headers: record.ResponseHeaders.GetRespHeaders(),
 				Status:  status,
 				File:    s.genBodyFile(record.ResponseBody, "response", record),
 			},

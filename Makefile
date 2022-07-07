@@ -58,11 +58,11 @@ test.sandbox.record:
 	docker run -d --network mockest --name outbound-demo mockest/demo
 test.sandbox.replay:
 	docker network create mockest
+	docker run -d -v ${PWD}/replay:/home/stubby4j/data --name replay --network mockest -e STUBS_PORT=80 azagniotov/stubby4j:latest-jre11
 	docker run -d --network mockest --name collector  mockest/collector
 	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name proxy mockest/proxy all --replay
 	docker run -d --network container:proxy --name coredns -v ${PWD}/coredns:/etc/coredns/ coredns/coredns -conf /etc/coredns/Corefile
 	docker run -d --network=container:proxy --name demo mockest/demo
-	docker run -d -v ${PWD}/replay:/home/stubby4j/data --name replay --network mockest -e STUBS_PORT=80 azagniotov/stubby4j:latest-jre11
 test.sandbox.clean:
 	docker rm -f collector
 	docker rm -f proxy
@@ -75,4 +75,5 @@ test.record: build.docker test.sandbox.clean test.sandbox.record
 	docker run --network mockest alpine/curl curl collector/gen
 test.replay: build.docker test.sandbox.clean test.sandbox.replay
 	sleep 5
+	docker run --network mockest alpine/curl curl proxy/inbound
 	docker run --network mockest alpine/curl curl proxy/inbound
