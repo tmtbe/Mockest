@@ -1,4 +1,16 @@
-FROM  --platform=linux/arm64/v8 ubuntu:jammy
+FROM --platform=$TARGETPLATFORM rust:1.61.0 as builder-rust
+WORKDIR /app
+COPY ./intercept .
+RUN rustup target add wasm32-unknown-unknown
+RUN cargo build --target wasm32-unknown-unknown --release
+
+FROM --platform=$TARGETPLATFORM golang:1.17-alpine as builder-golang
+WORKDIR /app
+COPY ./cmd .
+RUN go mod tidy \
+    && CGO_ENABLED=0 GOOS=linux go build -o proxy
+
+FROM --platform=$TARGETPLATFORM ubuntu:jammy
 RUN apt-get update && \
   apt-get install --no-install-recommends -y \
   ca-certificates \
@@ -18,8 +30,10 @@ RUN apt-get update && \
 RUN useradd -m --uid 1987 sidecar && \
    echo "sidecar ALL=NOPASSWD: ALL" >> /etc/sudoers
 
+COPY --from=builder-rust app/target/wasm32-unknown-unknown/release/intercept.wasm /home
+COPY --from=builder-golang app/proxy /home
 COPY --from=envoyproxy/envoy:v1.21.2  usr/local/bin/envoy /home
-COPY data /home
+COPY resource /home
 USER sidecar
 WORKDIR /home
 ENTRYPOINT ["./proxy"]

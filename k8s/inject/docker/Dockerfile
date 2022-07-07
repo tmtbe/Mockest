@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64/v8 scratch
+FROM --platform=$TARGETPLATFORM scratch
 WORKDIR /app
 COPY inject .
 EXPOSE 80
