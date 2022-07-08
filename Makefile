@@ -2,15 +2,17 @@ init:
 	docker buildx create --name mybuilder --driver docker-container
 	docker buildx use mybuilder
 
+build.amd64: export TARGETPLATFORM=linux/amd64
 build.amd64:
-	cd collector && docker build --platform linux/amd64 -t mockest/collector .
-	cd demo && docker build --platform linux/amd64 -t mockest/demo .
-	cd proxy && docker build --platform linux/amd64 -t mockest/proxy .
+	cd collector && docker build -t mockest/collector .
+	cd demo && docker build -t mockest/demo .
+	cd proxy && docker build -t mockest/proxy .
 
+build.arm64: export TARGETPLATFORM=linux/arm64
 build.arm64:
-	cd collector && docker build --platform linux/arm64 -t mockest/collector .
-	cd demo && docker build --platform linux/arm64 -t mockest/demo .
-	cd proxy && docker build --platform linux/arm64 -t mockest/proxy .
+	cd collector && docker build -t mockest/collector .
+	cd demo && docker build -t mockest/demo .
+	cd proxy && docker build -t mockest/proxy .
 
 test.sandbox.record:
 	docker network create mockest
