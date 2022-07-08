@@ -1,20 +1,16 @@
 init:
 	docker buildx create --name mybuilder --driver docker-container
 	docker buildx use mybuilder
-build:
-	cd collector && docker build --platform linux/arm64,linux/amd64 -t tmtbe/mockest-collector:master .
-	cd demo && docker build --platform linux/arm64,linux/amd64 -t tmtbe/mockest-demo:master .
-	cd proxy && docker build --platform linux/arm64,linux/amd64 -t tmtbe/mockest-proxy:master .
 
-build.amd:
-	cd collector && docker build --platform linux/amd64 -t tmtbe/mockest-collector:master .
-	cd demo && docker build --platform linux/amd64 -t tmtbe/mockest-demo:master .
-	cd proxy && docker build --platform linux/amd64 -t tmtbe/mockest-proxy:master .
+build.amd64:
+	cd collector && docker build --platform linux/amd64 -t mockest/collector .
+	cd demo && docker build --platform linux/amd64 -t mockest/demo .
+	cd proxy && docker build --platform linux/amd64 -t mockest/proxy .
 
-build.arm:
-	cd collector && docker build --platform linux/arm64 -t tmtbe/mockest-collector:master .
-	cd demo && docker build --platform linux/arm64 -t tmtbe/mockest-demo:master .
-	cd proxy && docker build --platform linux/arm64 -t tmtbe/mockest-proxy:master .
+build.arm64:
+	cd collector && docker build --platform linux/arm64 -t mockest/collector .
+	cd demo && docker build --platform linux/arm64 -t mockest/demo .
+	cd proxy && docker build --platform linux/arm64 -t mockest/proxy .
 
 test.sandbox.record:
 	docker network create mockest
