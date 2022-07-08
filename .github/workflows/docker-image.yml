@@ -43,7 +43,7 @@ jobs:
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
         with:
           context: ./proxy
-          file: {context}/Dockerfile.cross
+          file: ./proxy/Dockerfile.cross
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.proxy-meta.outputs.tags }}
@@ -58,7 +58,7 @@ jobs:
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
         with:
           context: ./collector
-          file: {context}/Dockerfile.cross
+          file: ./collector/Dockerfile.cross
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.collector-meta.outputs.tags }}
@@ -73,7 +73,7 @@ jobs:
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
         with:
           context: ./demo
-          file: {context}/Dockerfile.cross
+          file: ./demo/Dockerfile.cross
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.demo-meta.outputs.tags }}
