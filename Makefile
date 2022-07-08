@@ -25,8 +25,7 @@ test: build
 	docker run -d --network container:proxy --name coredns -v ${PWD}/coredns:/etc/coredns/ coredns/coredns -conf /etc/coredns/Corefile
 	docker run -d --network=container:proxy --name demo mockest/demo
 	sleep 5
-	docker run --rm --network mockest alpine/curl curl proxy/inbound
-	docker run --rm --network mockest alpine/curl curl proxy/inbound
+	docker run --rm --network mockest -v ${PWD}/tests:/home -w /home golang:1.17-alpine sh -c "CGO_ENABLED=0 go test"
 	docker rm -f collector
 	docker rm -f proxy
 	docker rm -f demo
