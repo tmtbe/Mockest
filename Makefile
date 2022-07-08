@@ -14,7 +14,7 @@ test: build
 	docker run -d --network=container:proxy --name demo mockest/demo
 	docker run -d --network mockest --name outbound-demo mockest/demo
 	sleep 5
-	docker run --rm --network mockest alpine/curl curl proxy/inbound
+	docker run --rm --network mockest -v ${PWD}/tests:/home -w /home golang:1.17-alpine sh -c "CGO_ENABLED=0 go test"
 	docker run --rm --network mockest alpine/curl curl collector/gen
 	docker rm -f collector
 	docker rm -f proxy
