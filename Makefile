@@ -20,10 +20,10 @@ test: build
 	docker rm -f proxy
 	docker rm -f demo
 	docker run -d -v ${PWD}/replay:/home/stubby4j/data --name replay --network mockest -e STUBS_PORT=80 azagniotov/stubby4j:latest-jre11
-	docker run -d --network mockest --name collector  tmtbe/mockest-collector:master
-	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name proxy tmtbe/mockest-proxy:master all --replay
+	docker run -d --network mockest --name collector  mockest/collector:master
+	docker run -d --cap-add=NET_ADMIN --cap-add=NET_RAW  --network mockest --dns 127.0.0.1 --name proxy mockest/proxy:master all --replay
 	docker run -d --network container:proxy --name coredns -v ${PWD}/coredns:/etc/coredns/ coredns/coredns -conf /etc/coredns/Corefile
-	docker run -d --network=container:proxy --name demo tmtbe/mockest-demo:master
+	docker run -d --network=container:proxy --name demo mockest/demo:master
 	sleep 5
 	docker run --rm --network mockest alpine/curl curl proxy/inbound
 	docker run --rm --network mockest alpine/curl curl proxy/inbound
@@ -32,7 +32,6 @@ test: build
 	docker rm -f demo
 	docker rm -f coredns
 	docker rm -f replay
-	docker network rm mockest
 
 test.sandbox.record:
 	docker network create mockest
