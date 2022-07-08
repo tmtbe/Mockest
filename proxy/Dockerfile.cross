@@ -1,17 +1,17 @@
-FROM envoyproxy/envoy:v1.21.2 as builder-envoy
-FROM rust:1.61.0 as builder-rust
+FROM --platform=$TARGETPLATFORM envoyproxy/envoy:v1.21.2 as builder-envoy
+FROM --platform=$TARGETPLATFORM rust:1.61.0 as builder-rust
 WORKDIR /app
 COPY ./intercept .
 RUN rustup target add wasm32-unknown-unknown
 RUN cargo build --target wasm32-unknown-unknown --release
 
-FROM golang:1.17-alpine as builder-golang
+FROM --platform=$TARGETPLATFORM golang:1.17-alpine as builder-golang
 WORKDIR /app
 COPY ./cmd .
 RUN go mod tidy \
     && CGO_ENABLED=0 GOOS=linux go build -o proxy
 
-FROM ubuntu:jammy
+FROM --platform=$TARGETPLATFORM ubuntu:jammy
 RUN apt-get update && \
   apt-get install --no-install-recommends -y \
   ca-certificates \
